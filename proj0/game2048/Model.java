@@ -166,9 +166,6 @@ public class Model extends Observable {
                 }
             }
         }
-        for (boolean b: alreadyMerged) {
-            b = false;
-        }
         return changed;
     }
 
