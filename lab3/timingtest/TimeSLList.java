@@ -28,7 +28,7 @@ public class TimeSLList {
         AList<Double> times = new AList<>();
         AList<Integer> opCounts = new AList<>();
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 7; i++) {
             int curLen = 1000 * (int)Math.pow(2, i);
             // 先构建好SLList
             SLList<Integer> testSLList = new SLList<>();
