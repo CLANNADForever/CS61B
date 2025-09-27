@@ -1,7 +1,5 @@
 package deque;
 
-import net.sf.saxon.functions.PositionAndLast;
-
 public class LinkedListDeque<T> {
 
     /* A nested class for the list */
