@@ -72,7 +72,7 @@ public class ArrayDequeTest {
     }
 
     @Test
-    /* Check if you can create ArrayDeques with different parameterized types*/
+    /* Check if you can create ArrayDeques with different parameterized types */
     public void multipleParamTest() {
         ArrayDeque<String>  lld1 = new ArrayDeque<String>();
         ArrayDeque<Double>  lld2 = new ArrayDeque<Double>();
@@ -97,6 +97,86 @@ public class ArrayDequeTest {
         boolean passed2 = false;
         assertEquals("Should return null when removeFirst is called on an empty Deque,", null, lld1.removeFirst());
         assertEquals("Should return null when removeLast is called on an empty Deque,", null, lld1.removeLast());
+    }
 
+    @Test
+    /* Add large number of elements to deque; check if order is correct. */
+    public void bigLLDequeTest() {
+
+        ArrayDeque<Integer> lld1 = new ArrayDeque<>();
+        for (int i = 0; i < 1000000; i++) {
+            lld1.addLast(i);
+        }
+
+        for (double i = 0; i < 500000; i++) {
+            assertEquals("Should have the same value", i, (double) lld1.removeFirst(), 0.0);
+        }
+
+        for (double i = 999999; i > 500000; i--) {
+            assertEquals("Should have the same value", i, (double) lld1.removeLast(), 0.0);
+        }
+    }
+
+    @Test
+    /* 随机测试.由于链表版本更为可靠，所以以它为参照，来测试数组版本. */
+    public void randomizedTest() {
+        LinkedListDeque<Integer> LLD = new LinkedListDeque<>();
+        ArrayDeque<Integer> AD = new ArrayDeque<>();
+
+        int N = 500000;
+        for (int i = 0; i < N; i += 1) {
+            int operationNumber = StdRandom.uniform(0, 6);
+            
+            if (operationNumber == 0) { 
+                // test addFirst
+                int randVal = StdRandom.uniform(0, 100);
+                LLD.addFirst(randVal);
+                AD.addFirst(randVal);
+                System.out.println("addFirst(" + randVal + ")");
+            } else if (operationNumber == 1) { 
+                // test addLast
+                int randVal = StdRandom.uniform(0, 100);
+                LLD.addLast(randVal);
+                AD.addLast(randVal);
+                System.out.println("addLast(" + randVal + ")");
+            } else if (operationNumber == 2) {
+                // test size
+                int LLDSize = LLD.size();
+                int ADSize = AD.size();
+                System.out.println("size: " + LLDSize);
+                assertTrue(LLDSize == ADSize);
+            } else if (operationNumber == 3) { 
+                // test removeFirst
+                if (LLD.isEmpty()) {
+                    continue;
+                }
+
+                int item1 = LLD.removeFirst();
+                int item2 = AD.removeFirst();
+                System.out.println("removeFirst() equals to " + item1);
+                assertTrue(item1 == item2);
+            } else if (operationNumber == 4) { 
+                // test removeLast
+                if (LLD.isEmpty()) {
+                    continue;
+                }
+
+                int item1 = LLD.removeLast();
+                int item2 = AD.removeLast();
+                System.out.println("removeLast() equals to " + item1);
+                assertTrue(item1 == item2);
+            } else if (operationNumber == 5) { // test get
+                int size = LLD.size();
+                if (size == 0) {
+                    continue;
+                }
+                int randVal = StdRandom.uniform(0, size);
+                int item1 = LLD.get(randVal);
+                int item2 = AD.get(randVal);
+
+                System.out.printf("get(%d) equals to %d", randVal, item1);
+                assertTrue(item1 == item2);
+            }
+        }
     }
 }

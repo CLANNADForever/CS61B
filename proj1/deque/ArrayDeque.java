@@ -3,9 +3,9 @@ package deque;
 import java.lang.reflect.Array;
 
 public class ArrayDeque<T> {
-    int size;
-    int startIndex; // 将要作为首位插入点的索引
-    int endIndex; // 将要作为末尾插入点的索引
+    private int size;
+    private int startIndex; // 将要作为首位插入点的索引
+    private int endIndex; // 将要作为末尾插入点的索引
     private T[] array;
 
     /* Creates an empty linked list deque. */
@@ -18,6 +18,12 @@ public class ArrayDeque<T> {
 
     /* Adds an item of type T to the front of the deque in constant time, except during resizing operations. */
     public void addFirst(T item) {
+        if (size == array.length) {
+            resize(2 * size);
+            startIndex = array.length - 1;
+            endIndex = size;
+        }
+
         array[startIndex] = item;
         // 更新索引，为下次操作做准备
         startIndex -= 1; // 所有index的操作同理，都可能越界，都应循环到另一头，之后使用三目运算，此处作示例。
@@ -29,6 +35,12 @@ public class ArrayDeque<T> {
 
     /* Adds an item of type T to the back of the deque in constant time, except during resizing operations. */
     public void addLast(T item) {
+        if (size == array.length) {
+            resize(2 * size);
+            startIndex = array.length - 1;
+            endIndex = size;
+        }
+
         array[endIndex] = item;
         endIndex = endIndex + 1 == array.length ? 0 : endIndex + 1;
         size += 1;
@@ -77,10 +89,18 @@ public class ArrayDeque<T> {
         if (isEmpty()) {
             return null;
         }
+
+        if (size >= 16 && size <= array.length / 4) {
+            resize(array.length / 4);
+            startIndex = array.length - 1; // 然后itemStartIndex为0，这是符合定义的，因为resize之后第一个元素在索引0
+            endIndex = 0; // 与startIndex对称，同理
+        }
+
         int itemStartIndex = startIndex + 1 == array.length ? 0 : startIndex + 1;
         T removedItem = array[itemStartIndex];
         startIndex = startIndex + 1 == array.length ? 0 : startIndex + 1;
         size -= 1;
+
         return removedItem;
     }
 
@@ -91,6 +111,13 @@ public class ArrayDeque<T> {
         if (isEmpty()) {
             return null;
         }
+
+        if (size >= 16 && size <= array.length / 4) {
+            resize(array.length / 4);
+            startIndex = array.length - 1; // 然后itemStartIndex为0，这是符合定义的，因为resize之后第一个元素在索引0
+            endIndex = 0; // 与startIndex对称，同理
+        }
+
         int itemEndIndex = endIndex - 1 == -1 ? array.length - 1 : endIndex - 1;
         T removeItem = array[itemEndIndex];
         endIndex = endIndex - 1 == -1 ? array.length - 1 : endIndex - 1;
@@ -102,12 +129,29 @@ public class ArrayDeque<T> {
     If no such item exists, returns null.
      */
     public T get(int index) {
-        if (index > size() - 1) {
+        if (index > size - 1) {
             return null;
         }
         int idx = startIndex + 1 == array.length ? 0 : startIndex + 1;
-        for (int t = 0; t < index; t++, idx = idx + 1 == array.length ? 0 : idx + 1);
+        for (int t = 0; t < index; t++) {
+            idx = idx + 1 == array.length ? 0 : idx + 1;
+        }
         return array[idx];
     }
 
+    /* 调整实际数组大小。规定新数组所有元素均从前面开始，即0到size - 1. */
+    public void resize(int newSize) {
+        T[] newArray = (T[]) new Object[newSize];
+        // 实际有元素的索引
+        int itemStartIndex = startIndex + 1 == array.length ? 0 : startIndex + 1;
+        int itemEndIndex = endIndex - 1 == -1 ? array.length - 1 : endIndex - 1;
+
+        if (itemStartIndex < itemEndIndex) {
+            System.arraycopy(array, itemStartIndex, newArray, 0, size);
+        } else {
+            System.arraycopy(array, itemStartIndex, newArray, 0, array.length - itemStartIndex);
+            System.arraycopy(array, 0, newArray, array.length - itemStartIndex, itemEndIndex + 1);
+        }
+        array = newArray;
+    }
 }

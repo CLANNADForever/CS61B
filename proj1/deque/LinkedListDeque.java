@@ -3,7 +3,7 @@ package deque;
 public class LinkedListDeque<T> {
 
     /* A nested class for the list */
-    public class Node {
+    private class Node {
         public T item; // generic type of hosted class can be directly used
         public Node last;
         public Node next;
@@ -14,7 +14,7 @@ public class LinkedListDeque<T> {
         }
     }
 
-    int size;
+    private int size;
     private Node sentinel;
 
     /* Creates an empty linked list deque. */
@@ -100,7 +100,9 @@ public class LinkedListDeque<T> {
             return null;
         }
         Node curNode = sentinel.next;
-        for (int i = 0; i < index; i++, curNode = curNode.next);
+        for (int i = 0; i < index; i++) {
+            curNode = curNode.next;
+        }
         return curNode.item;
     }
 
