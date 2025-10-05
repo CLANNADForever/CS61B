@@ -1,6 +1,10 @@
 package deque;
 
-public class LinkedListDeque<T> {
+import org.apache.commons.collections.FastArrayList;
+
+import java.util.Iterator;
+
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
 
     /* A nested class for the list */
     private class Node {
@@ -25,6 +29,7 @@ public class LinkedListDeque<T> {
         sentinel.last = sentinel;
     }
 
+    @Override
     /* Adds an item of type T to the front of the deque in constant time. */
     public void addFirst(T item) {
         Node node = new Node(item, sentinel, sentinel.next);
@@ -33,6 +38,7 @@ public class LinkedListDeque<T> {
         size += 1;
     }
 
+    @Override
     /* Adds an item of type T to the back of the deque in constant time.*/
     public void addLast(T item) {
         Node node = new Node(item, sentinel.last, sentinel);
@@ -41,16 +47,13 @@ public class LinkedListDeque<T> {
         size += 1;
     }
 
-    /* Returns true if deque is empty, false otherwise. */
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
+    @Override
     /* Returns the number of items in the deque. */
     public int size() {
         return size;
     }
 
+    @Override
     /* Prints the items in the deque from first to last, separated by a space.
     Once all the items have been printed, print out a new line.
      */
@@ -63,6 +66,7 @@ public class LinkedListDeque<T> {
         System.out.println();
     }
 
+    @Override
     /* Removes and returns the item at the front of the deque in constant time.
     If no such item exists, returns null.
      */
@@ -77,6 +81,7 @@ public class LinkedListDeque<T> {
         return removedItem;
     }
 
+    @Override
     /* Removes and returns the item at the back of the deque in constant time.
     If no such item exists, returns null.
      */
@@ -91,6 +96,7 @@ public class LinkedListDeque<T> {
         return removeItem;
     }
 
+    @Override
     /* Gets the item at the given index, where 0 is the front, 1 is the next item, and so forth.
     If no such item exists, returns null.
     Must use iteration.
@@ -123,5 +129,47 @@ public class LinkedListDeque<T> {
             return node.item;
         }
         return getRecursive(node.next, index, curIndex + 1);
+    }
+
+    private class LinkedListDequeIterator implements Iterator<T> {
+        public Node curPos;
+        public LinkedListDequeIterator() {
+            curPos = sentinel.next;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return curPos.next != sentinel;
+        }
+
+        @Override
+        public T next() {
+            T returnItem = curPos.item;
+            curPos = curPos.next;
+            return returnItem;
+        }
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListDequeIterator();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof Deque otherDeque) {
+            if (size() != otherDeque.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < size; i++) {
+                if (get(i) != otherDeque.get(i)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        return false;
     }
 }
