@@ -18,7 +18,8 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
     }
 
     @Override
-    /* Adds an item of type T to the front of the deque in constant time, except during resizing operations. */
+    /* Adds an item of type T to the front of the deque in constant time,
+    except during resizing operations. */
     public void addFirst(T item) {
         if (size == array.length) {
             resize(2 * size);
@@ -143,7 +144,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
     }
 
     /* 调整实际数组大小。规定新数组所有元素均从前面开始，即0到size - 1. */
-    public void resize(int newSize) {
+    private void resize(int newSize) {
         T[] newArray = (T[]) new Object[newSize];
         // 实际有元素的索引
         int itemStartIndex = startIndex + 1 == array.length ? 0 : startIndex + 1;
@@ -166,7 +167,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
 
         @Override
         public boolean hasNext() {
-            return curPos != size() - 1;
+            return curPos <= size() - 1;
         }
 
         @Override
@@ -185,7 +186,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
     @Override
     public boolean equals(Object o) {
         if (o instanceof Deque) {
-            ArrayDeque<T> otherDeque = (ArrayDeque<T>) o;
+            Deque<T> otherDeque = (Deque<T>) o;
             if (size() != otherDeque.size()) {
                 return false;
             }

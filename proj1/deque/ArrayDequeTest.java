@@ -2,6 +2,10 @@ package deque;
 
 import edu.princeton.cs.algs4.StdRandom;
 import org.junit.Test;
+
+import java.lang.reflect.Array;
+import java.util.Iterator;
+
 import static org.junit.Assert.*;
 
 public class ArrayDequeTest {
@@ -177,6 +181,22 @@ public class ArrayDequeTest {
                 System.out.printf("get(%d) equals to %d", randVal, item1);
                 assertTrue(item1 == item2);
             }
+            assertTrue(LLD.equals(AD));
         }
+    }
+
+    @Test
+    public void iteratorTest() {
+        ArrayDeque<Integer> ad = new ArrayDeque<>();
+        for (int i = 0; i < 1000000; i++) {
+            ad.addLast(i);
+        }
+
+        Iterator<Integer> iter = ad.iterator();
+        for (int i = 0; i < 1000000; i++) {
+            assertTrue(iter.hasNext());
+            assertEquals(i, (int)iter.next());
+        }
+        assertFalse(iter.hasNext());
     }
 }

@@ -139,7 +139,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
 
         @Override
         public boolean hasNext() {
-            return curPos.next != sentinel;
+            return curPos != sentinel;
         }
 
         @Override
@@ -158,7 +158,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
     @Override
     public boolean equals(Object o) {
         if (o instanceof Deque) {
-            LinkedListDeque<T> otherDeque = (LinkedListDeque<T>) o;
+            Deque<T> otherDeque = (Deque<T>) o;
             if (size() != otherDeque.size()) {
                 return false;
             }
