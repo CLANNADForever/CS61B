@@ -1,7 +1,6 @@
 package bstmap;
 
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
     private BSTNode root;
@@ -118,11 +117,36 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
 
     @Override
     public Set<K> keySet() {
-        throw new UnsupportedOperationException("Unsupported method.");
+        Set<K> set = new TreeSet<>();
+        addToSet(set, root);
+        return set;
+    }
+
+    private void addToSet(Set<K> set, BSTNode node) {
+        if (node == null) {
+            return;
+        }
+        addToSet(set, node.left);
+        set.add(node.key);
+        addToSet(set, node.right);
+    }
+    
+    private void addToList(List<K> list, BSTNode node) {
+        if (node == null) {
+            return;
+        }
+        addToList(list, node.left);
+        list.add(node.key);
+        addToList(list, node.right);
     }
 
     public void printInOrder() {
-
+        List<K> l = new ArrayList<>();
+        addToList(l, root);
+        for (K key : l) {
+            System.out.print(key + " ");
+        }
+        System.out.println();
     }
 
     @Override
@@ -136,6 +160,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
     }
 
     public Iterator<K> iterator() {
-        throw new UnsupportedOperationException("Unsupported method.");
+        Set<K> set = keySet();
+        return set.iterator();
     }
 }
