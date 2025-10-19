@@ -65,10 +65,14 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
         if (node == null) {
             return false;
         }
-        if (node.key.equals(key)) {
+        int cmp = key.compareTo(node.key);
+        if (cmp == 0) {
             return true;
+        } else if (cmp > 0) {
+            return containsKey(key, node.right);
+        } else {
+            return containsKey(key, node.left);
         }
-        return containsKey(key, node.left) || containsKey(key, node.right);
     }
 
     @Override
@@ -143,8 +147,10 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
     public void printInOrder() {
         List<K> l = new ArrayList<>();
         addToList(l, root);
-        for (K key : l) {
-            System.out.print(key + " ");
+        for (int i = 0; i < size(); i++) {
+            K key = l.get(i);
+            V value = get(key);
+            System.out.print("<" + key + ", " + value + "> ");
         }
         System.out.println();
     }

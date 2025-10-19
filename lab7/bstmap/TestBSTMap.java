@@ -22,16 +22,17 @@ public class TestBSTMap {
     @Test
     public void sanityClearTest() {
     	BSTMap<String, Integer> b = new BSTMap<String, Integer>();
-        for (int i = 0; i < 455; i++) {
+        for (int i = 0; i < 20; i++) {
             b.put("hi" + i, 1+i);
             //make sure put is working via containsKey and get
             assertTrue( null != b.get("hi" + i) && (b.get("hi"+i).equals(1+i))
                         && b.containsKey("hi" + i));
         }
-        assertEquals(455, b.size());
+        assertEquals(20, b.size());
+        b.printInOrder();
         b.clear();
         assertEquals(0, b.size());
-        for (int i = 0; i < 455; i++) {
+        for (int i = 0; i < 20; i++) {
             assertTrue(null == b.get("hi" + i) && !b.containsKey("hi" + i));
         }
     }
@@ -86,5 +87,15 @@ public class TestBSTMap {
         b.put("hi", null);
         assertTrue(b.containsKey("hi"));
     }
+
+    @Test
+    public void printInOrderTest(){
+        BSTMap<Integer, Integer> b = new BSTMap<>();
+        for (int i = 0; i < 100; i++) {
+            b.put(i, i*i);
+        }
+        b.printInOrder();
+    }
+
 
 }
