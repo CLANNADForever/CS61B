@@ -36,12 +36,15 @@
 仅有用于实现功能的private变量。
 
 
-### Class 3 : 
+### Class 3 : Commit
+代表一次提交，包含其自身时间戳和提交信息，同时包含文件名及其引用，和指向父提交的引用。
+一个Commit对象本身会被序列化写入文件。
 
 #### Fields
 
-1. Field 1
-2. Field 2
+1. String message: 提交信息。
+2. String timeStamp: 提交时的时间戳。
+3. 
 
 
 ## Algorithms

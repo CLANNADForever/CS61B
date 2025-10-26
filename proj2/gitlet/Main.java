@@ -21,6 +21,7 @@ public class Main {
             case "init":
                 // TODO: handle the `init` command
                 validateNumArgs(argumentSize, 0);
+                Repository.initGitlet();
                 break;
             case "add":
                 // TODO: handle the `add [filename]` command
