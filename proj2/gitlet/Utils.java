@@ -59,7 +59,7 @@ class Utils {
 
     /** Returns the SHA-1 hash of the concatenation of the strings in
      *  VALS. */
-    static String sha1(List<Object> vals) {
+static String sha1(List<Object> vals) {
         return sha1(vals.toArray(new Object[vals.size()]));
     }
 
@@ -235,5 +235,20 @@ class Utils {
     static void message(String msg, Object... args) {
         System.out.printf(msg, args);
         System.out.println();
+    }
+
+    /* MY UTILS */
+
+    /**
+     * Checks the number of arguments versus the expected number,
+     * print message if they do not match.
+     *
+     * @param argumentSize Size of argument from command line
+     * @param n Number of expected arguments
+     */
+    public static void validateNumArgs(int argumentSize, int n) {
+        if (argumentSize != n) {
+            message("Incorrect operands.");
+        }
     }
 }
