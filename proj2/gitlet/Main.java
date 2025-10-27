@@ -19,13 +19,12 @@ public class Main {
         int argumentSize = args.length - 1;
         switch(firstArg) {
             case "init":
-                // TODO: handle the `init` command
                 validateNumArgs(argumentSize, 0);
                 Repository.initGitlet();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
                 validateNumArgs(argumentSize, 1);
+                Repository.addFile(args[1]);
                 break;
             case "commit":
                 break;

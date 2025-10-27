@@ -1,7 +1,9 @@
 package gitlet;
 
 // TODO: any imports you need here
+import afu.org.checkerframework.checker.oigj.qual.O;
 
+import java.util.*;
 import java.io.Serializable;
 import java.util.Date; // TODO: You'll likely use this in this class
 
@@ -29,18 +31,18 @@ public class Commit implements Serializable { // TODO: does it need to implement
     private String parentHash1 = null;
     private String parentHash2 = null;
 
-    /** 指向文件内容的“指针”，同理使用sha1哈希值。*/
-    private String[] files = null;
+    /** 指向文件内容的“指针”，同理使用sha1哈希值，为记录文件变化，需同时存储名字和sha1。*/
+    private TreeMap<String, String> files = null;
 
     /* TODO: fill in the rest of this class. */
-    public Commit(String message, String parentHash1, String[] files) {
+    public Commit(String message, String parentHash1, TreeMap<String, String> files) {
         this.message = message;
         timeStamp = new Date().getTime();
         this.parentHash1 = parentHash1;
         this.files = files;
     }
 
-    public Commit(String message, String parentHash1, String parentHash2, String[] files) {
+    public Commit(String message, String parentHash1, String parentHash2, TreeMap<String, String> files) {
         this.message = message;
         timeStamp = new Date().getTime();
         this.parentHash1 = parentHash1;
@@ -52,6 +54,15 @@ public class Commit implements Serializable { // TODO: does it need to implement
     public Commit() {
         this.message = "initial commit";
         timeStamp = 0L;
+        System.out.println(this);
     }
+    // TODO： finish this
+//    @Override
+//    public String toString() {
+//        String fileString;
+//        for (String filename : files) {
+//
+//        }
+//    }
 
 }

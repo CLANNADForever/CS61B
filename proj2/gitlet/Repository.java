@@ -25,15 +25,21 @@ public class Repository {
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
-    /** commit文件夹下存储每个commit序列化后的内容 */
+    /** commit文件夹存储每个commit序列化后的内容 */
     public static final File COMMIT_DIR = join(GITLET_DIR, "commit");
 
-    /* TODO: fill in the rest of this class. */
-    /** 在当前目录创建一个新的 Gitlet。*/
+    /** staging文件夹存储被add且未被commit的暂存文件 */
+    public static final File STAGING_DIR = join(GITLET_DIR, "staging");
+
+
+
+    /** init命令：在当前目录创建一个新的 Gitlet。*/
     public static void initGitlet() {
+        // 若存在gitlet，抛出错误，否则新建.gitlet及其附属文件夹，并提交一个初始提交。
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdir();
             COMMIT_DIR.mkdir();
+            STAGING_DIR.mkdir();
             Commit initialCommit = new Commit();
             writeCommit(initialCommit);
         } else {
@@ -41,7 +47,25 @@ public class Repository {
         }
     }
 
+    public static void addFile(String fileName) {
+        File f = join(CWD, fileName);
+        // 若文件不存在，抛出错误
+        if (!f.exists()) {
+            throw error("File does not exist.");
+        }
+
+        // 若文件内容与当前提交中该文件内容完全相同，不添加到暂存区
+        if (false) {
+            return;
+        }
+
+        // 将文件添加到暂存区
+
+    }
+
+    /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
     private static void writeCommit(Commit commit) {
+        // FIXME: 完成commit的toString
         File sentinel = join(CWD,"gitlet","sentinel");
         writeObject(sentinel, commit);
         String hash = sha1(readContentsAsString(sentinel));
@@ -52,5 +76,18 @@ public class Repository {
             throw new RuntimeException(e);
         }
         writeObject(d, commit);
+    }
+
+    /** 向指定文件夹写入一个文件，写入时文件名为sha1序列，内容为文件序列化后的结果。 */
+    private static void writeFile(File dir, File file) {
+        String fileString = readContentsAsString(file);
+        String hash = sha1(fileString);
+        File newFile = join(STAGING_DIR, hash);
+    }
+
+    /** 传入一个文件夹和文件，检查在该路径下是否存在内容完全相同的文件。使用sha1与文件名对比 */
+    private static boolean fileExist(File dir, File file) {
+
+        return false;
     }
 }
