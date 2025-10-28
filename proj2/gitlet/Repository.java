@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.TreeMap;
 
 import static gitlet.Utils.*;
 
@@ -40,7 +41,8 @@ public class Repository {
     public static final File REMOVED_DIR = join(SNAPSHOT_DIR, "removed");
 
     public String headPointer;
-
+    public String currentBranch;
+    public TreeMap<String, String> branches;
 
     /** init命令：在当前目录创建一个新的 Gitlet。*/
     public static void initGitlet() {
