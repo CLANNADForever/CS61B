@@ -26,21 +26,34 @@ public class Repository {
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
     /** commit文件夹存储每个commit序列化后的内容 */
-    public static final File COMMIT_DIR = join(GITLET_DIR, "commit");
+    public static final File COMMIT_DIR = join(GITLET_DIR, "commits");
 
     /** staging文件夹存储被add且未被commit的暂存文件 */
-    public static final File STAGING_DIR = join(GITLET_DIR, "staging");
+    public static final File STAGING_DIR = join(GITLET_DIR, "staging-area");
 
+    /** files文件夹存储所有被提交了的文件，即实际追踪的历史版本文件 */
+    public static final File FILE_DIR = join(GITLET_DIR, "files");
+
+    /** snapshot文件夹存储当前文件中与所在提交中不同的（修改或删除）文件名映射，使提交时能够只改变这些文件。 */
+    public static final File SNAPSHOT_DIR = join(GITLET_DIR, "snapshot");
+    public static final File CHANGED_DIR = join(SNAPSHOT_DIR, "changed");
+    public static final File REMOVED_DIR = join(SNAPSHOT_DIR, "removed");
+
+    public String headPointer;
 
 
     /** init命令：在当前目录创建一个新的 Gitlet。*/
     public static void initGitlet() {
-        // 若存在gitlet，抛出错误，否则新建.gitlet及其附属文件夹，并提交一个初始提交。
+        // 若存在gitlet，抛出错误，否则新建.gitlet及其所有附属文件夹，并提交一个初始提交。
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdir();
             COMMIT_DIR.mkdir();
             STAGING_DIR.mkdir();
-            Commit initialCommit = new Commit();
+            FILE_DIR.mkdir();
+            SNAPSHOT_DIR.mkdir();
+            CHANGED_DIR.mkdir();
+            REMOVED_DIR.mkdir();
+            Commit initialCommit = new Commit(); // 无参数为默认初始提交
             writeCommit(initialCommit);
         } else {
             throw error("A Gitlet version-control system already exists in the current directory.");

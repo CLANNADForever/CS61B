@@ -1,7 +1,6 @@
 package gitlet;
 
 // TODO: any imports you need here
-import afu.org.checkerframework.checker.oigj.qual.O;
 
 import java.util.*;
 import java.io.Serializable;
@@ -54,7 +53,7 @@ public class Commit implements Serializable { // TODO: does it need to implement
     public Commit() {
         this.message = "initial commit";
         timeStamp = 0L;
-        System.out.println(this);
+//        System.out.println(this);
     }
     // TODO： finish this
 //    @Override
