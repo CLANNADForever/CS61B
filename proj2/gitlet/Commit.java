@@ -1,18 +1,17 @@
 package gitlet;
 
-// TODO: any imports you need here
-
+import java.io.File;
 import java.util.*;
 import java.io.Serializable;
 import java.util.Date; // TODO: You'll likely use this in this class
+import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
- *  @author TODO
+ *  @author Wangjishi
  */
-public class Commit implements Serializable { // TODO: does it need to implement Serializable?
+public class Commit implements Serializable {
     /**
      *
      * List all instance variables of the Commit class here with a useful
@@ -31,9 +30,8 @@ public class Commit implements Serializable { // TODO: does it need to implement
     private String parentHash2 = null;
 
     /** 指向文件内容的“指针”，同理使用sha1哈希值，为记录文件变化，需同时存储名字和sha1。*/
-    private TreeMap<String, String> files = null;
+    private TreeMap<String, String> files = null; // FIXME: hashmap?
 
-    /* TODO: fill in the rest of this class. */
     public Commit(String message, String parentHash1, TreeMap<String, String> files) {
         this.message = message;
         timeStamp = new Date().getTime();
@@ -53,15 +51,41 @@ public class Commit implements Serializable { // TODO: does it need to implement
     public Commit() {
         this.message = "initial commit";
         timeStamp = 0L;
-//        System.out.println(this);
+        System.out.println(this);
     }
-    // TODO： finish this
-//    @Override
-//    public String toString() {
-//        String fileString;
-//        for (String filename : files) {
-//
-//        }
-//    }
+
+    public void printLog() {
+        // TODO
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder content = new StringBuilder();
+        content.append("message: ").append(message);
+        content.append("\ntimeStamp: ").append(timeStamp);
+        if (parentHash1 != null) {
+            content.append("\nparentHash1: ").append(parentHash1);
+        }
+        if (parentHash2 != null) {
+            content.append("\nparentHash2: ").append(parentHash2);
+        }
+        if (files != null) {
+            content.append("\nfiles: ");
+            for (Map.Entry<String, String> entry : files.entrySet()) {
+                content.append(entry.getKey()).append(":").append(entry.getValue()).append("\n");
+            }
+        }
+        return content.toString();
+    }
+
+    /** 检查传入的文件在本提交中是否存在（完全相同） */
+    public boolean containSameFile(File f) {
+        String hash = sha1(readContentsAsString(f));
+        if (files == null) {
+            return false;
+        }
+        String fileName = f.getName();
+        return files.containsKey(fileName) && files.get(fileName).equals(hash);
+    }
 
 }
