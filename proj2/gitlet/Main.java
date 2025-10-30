@@ -19,14 +19,19 @@ public class Main {
         int argumentSize = args.length - 1;
         switch(firstArg) {
             case "init":
-                validateNumArgs(argumentSize, 0);
-                Repository.initGitlet();
+                if (validateNumArgs(argumentSize, 0)) {
+                    Repository.initGitlet();
+                }
                 break;
             case "add":
-                validateNumArgs(argumentSize, 1);
-                Repository.addFile(args[1]);
+                if (validateNumArgs(argumentSize, 1)) {
+                    Repository.addFile(args[1]);
+                }
                 break;
             case "commit":
+                if (validateNumArgs(argumentSize, 1)) {
+                    Repository.commitWithMessage(args[1]);
+                }
                 break;
             case "rm":
                 break;

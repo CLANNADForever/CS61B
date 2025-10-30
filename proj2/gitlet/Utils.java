@@ -246,9 +246,12 @@ static String sha1(List<Object> vals) {
      * @param argumentSize Size of argument from command line
      * @param n Number of expected arguments
      */
-    public static void validateNumArgs(int argumentSize, int n) {
+    public static boolean validateNumArgs(int argumentSize, int n) {
         if (argumentSize != n) {
             message("Incorrect operands.");
+            return false;
+        } else {
+            return true;
         }
     }
 }

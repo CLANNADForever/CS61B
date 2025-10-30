@@ -30,7 +30,7 @@ public class Commit implements Serializable {
     private String parentHash2 = null;
 
     /** 指向文件内容的“指针”，同理使用sha1哈希值，为记录文件变化，需同时存储名字和sha1。*/
-    private TreeMap<String, String> files = null; // FIXME: hashmap?
+    public TreeMap<String, String> files = null;
 
     public Commit(String message, String parentHash1, TreeMap<String, String> files) {
         this.message = message;
@@ -51,6 +51,7 @@ public class Commit implements Serializable {
     public Commit() {
         this.message = "initial commit";
         timeStamp = 0L;
+        this.files = new TreeMap<>();
         System.out.println(this);
     }
 
@@ -81,9 +82,6 @@ public class Commit implements Serializable {
     /** 检查传入的文件在本提交中是否存在（完全相同） */
     public boolean containSameFile(File f) {
         String hash = sha1(readContentsAsString(f));
-        if (files == null) {
-            return false;
-        }
         String fileName = f.getName();
         return files.containsKey(fileName) && files.get(fileName).equals(hash);
     }

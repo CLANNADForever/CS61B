@@ -161,19 +161,22 @@
     
 #### Fields
 - 若干路径变量
-- **String headPointer**: 存储当前所在提交的sha1，永远指向当前所处的提交。
-- **String currentBranch**: 当前所在分支名。
-- **TreeMap\<String, String\> branches**: **有序地**存储所有分支名与所指提交sha1的映射。
+- **String headPointer**: 存储当前所在提交的sha1，永远指向当前所处的提交。**从文件中读取和写入！！！持久化**
+- **String currentBranch**: 当前所在分支名。**从文件中读取和写入！！！持久化**
+- **TreeMap\<String, String\> branches**: **有序地**存储所有分支名与所指提交sha1的映射。**从文件中读取和写入！！！持久化**
 
 
 ## File Structure
 📦.gitlet<br>
+┣ 📜headPointer:存储头指针指向的提交的sha1字符串<br>
+┣ 📜currentBranch:存储当前所在分支的名称字符串<br>
+┣ 📜branches:存储所有分支名与提交的映射<br>
 ┣ 📂commits:存储所有提交<br>
 ┃ ┗ 📜1760c3ce6ced84ee5483c6e1f91d63d8b082fbaa（文件名为commit的sha1）<br>
 ┣ 📂files:存储所有历史版本文件，文件名为file的sha1<br>
 ┣ 📂snapshot:存储当前版本被改变或删除的文件名与sha1的映射<br>
 ┃ ┣ 📜changed:内容是一个TreeMap\<String, String\>，键是被修改的文件名，值是staging-area中的文件的sha1<br>
-┃ ┗ 📜removed:内容是一个TreeSet\<String\>，存储所有被删除的文件名<br>
+┃ ┗ 📜removed:内容是一个TreeMap\<String, String\>，存储所有被删除的文件名，值为null<br>
 ┗ 📂staging-area:存储当前add的文件，文件名为file的sha1
 
 
