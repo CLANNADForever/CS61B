@@ -39,6 +39,9 @@ public class Main {
                 }
                 break;
             case "log":
+                if (validateNumArgs(argumentSize, 0)) {
+                    Repository.printLog();
+                }
                 break;
             case "global-log":
                 break;

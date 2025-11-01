@@ -90,13 +90,8 @@ public class Repository {
         if (readCommit(headPointer).containSameFile(f)) {
             // 如果已在暂存区存在相同的文件，将其移除
             if (fileExistInDir(STAGING_DIR, f)) {
-                // 从暂存区中移除
-                File dupFile = join(STAGING_DIR, hash);
-                assert dupFile.exists();
-                dupFile.delete();
-
-                // 从snapshot/changed中移除
-                remove(SNAPSHOT_DIR, "changed", fileName);
+                join(STAGING_DIR, hash).delete(); // 从暂存区中移除
+                remove(SNAPSHOT_DIR, "changed", fileName); // 从map中移除
             }
             return;
         }
@@ -177,6 +172,14 @@ public class Repository {
 
         // 如果用户未删除，则删除文件
         if (join(CWD, fileName).exists()) restrictedDelete(fileName);
+    }
+
+    /** 从head提交开始反向打印提交信息，直到初始提交 */
+    public static void printLog() {
+        Commit c = readCommit(headPointer);
+        c.printLog(headPointer);
+        c.printLog(headPointer);
+
     }
 
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */

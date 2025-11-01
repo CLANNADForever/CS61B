@@ -55,8 +55,14 @@ public class Commit implements Serializable {
         System.out.println(this);
     }
 
-    public void printLog() {
-        // TODO
+    /** 按照指定格式输出日志。仅包含本提交的信息 */
+    public void printLog(String commitHash) {
+        Date date = new Date(timeStamp);
+        message("===");
+        message("commit " + commitHash);
+        message("Date: " + date);
+        message(message);
+        message("");
     }
 
     @Override
