@@ -79,11 +79,12 @@ public class Repository {
 
     public static void addFile(String fileName) {
         File f = join(CWD, fileName);
-        String hash = sha1(readContentsAsString(f));
-        // 若文件不存在，抛出错误
+        // 若文件不存在，打印错误信息
         if (!f.exists()) {
-            throw error("File does not exist.");
+            message("File does not exist.");
+            return;
         }
+        String hash = sha1(readContentsAsString(f));
 
         // 若文件内容与当前提交中该文件内容完全相同，不添加到暂存区
         if (readCommit(headPointer).containSameFile(f)) {
@@ -152,6 +153,30 @@ public class Repository {
         put(GITLET_DIR, "branches", currentBranch, headPointer);
         clearMap(SNAPSHOT_DIR, "changed");
         clearMap(SNAPSHOT_DIR, "removed");
+    }
+
+    /** 取消暂存和跟踪一个文件，若文件未被用户删除，则将其删除 */
+    public static void removeFile(String fileName) {
+        TreeMap<String, String> changedMap = readMap(SNAPSHOT_DIR, "changed");
+        TreeMap<String, String> commitMap = readCommit(headPointer).files;
+        if (!changedMap.containsKey(fileName) && !commitMap.containsKey(fileName)) { // 既未被暂存，又未被跟踪
+            message("No reason to remove the file.");
+            return;
+        }
+
+        // 如果该文件的修改操作被暂存，取消暂存
+        if (changedMap.containsKey(fileName)) {
+            removeFile(STAGING_DIR, changedMap.get(fileName)); // 暂存区被删除的文件文件名应为sha1，由changedMap跟踪
+            remove(SNAPSHOT_DIR, "changed", fileName); // remove内部会改变原本的文件
+        }
+
+        // 如果该文件被跟踪，则暂存删除
+        if (commitMap.containsKey(fileName)) {
+            put(SNAPSHOT_DIR, "removed", fileName, null); // 删除区值置为null，当集合使用
+        }
+
+        // 如果用户未删除，则删除文件
+        if (join(CWD, fileName).exists()) restrictedDelete(fileName);
     }
 
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
