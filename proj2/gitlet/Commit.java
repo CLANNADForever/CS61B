@@ -26,8 +26,8 @@ public class Commit implements Serializable {
     private long timeStamp;
 
     /** 父节点的“指针”，为了避免序列化时额外开销，存储其sha1哈希值。*/
-    private String parentHash1 = null;
-    private String parentHash2 = null;
+    public String parentHash1 = null;
+    public String parentHash2 = null;
 
     /** 指向文件内容的“指针”，同理使用sha1哈希值，为记录文件变化，需同时存储名字和sha1。*/
     public TreeMap<String, String> files = null;

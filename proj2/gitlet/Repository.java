@@ -177,9 +177,12 @@ public class Repository {
     /** 从head提交开始反向打印提交信息，直到初始提交 */
     public static void printLog() {
         Commit c = readCommit(headPointer);
-        c.printLog(headPointer);
-        c.printLog(headPointer);
-
+        String commitHash = headPointer;
+        while (c != null) {
+            c.printLog(commitHash);
+            commitHash = c.parentHash1;
+            c = readCommit(commitHash);
+        }
     }
 
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
@@ -227,10 +230,11 @@ public class Repository {
 
     /** 用sha1读取出一个提交 */
     private static Commit readCommit(String commitHash) {
+        if (commitHash == null) {
+            return null;
+        }
         File f = join(COMMIT_DIR, commitHash);
-        assert f.exists();
         Commit c = readObject(f, Commit.class);
-        assert c != null;
         return c;
     }
 
