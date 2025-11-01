@@ -99,7 +99,7 @@
 
 
 - **removeFile(fileName)**: 移除或取消暂存一个文件。
-  1. 在暂存区中搜索该文件，若找到，则从staging-area和snapshot中删除，结束操作。
+  1. 在暂存区中搜索该文件，若找到，则从staging-area和snapshot中删除。
   2. 在head指向的file中搜索该文件，若找到，将其加入snapshot/removed。
   3. 若以上均未找到，打印错误信息"*No reason to remove the file.*"。
   4. 在当前工作目录中搜索该文件，若找到，将其删除.
@@ -170,9 +170,9 @@
 📦.gitlet<br>
 ┣ 📜headPointer:存储头指针指向的提交的sha1字符串<br>
 ┣ 📜currentBranch:存储当前所在分支的名称字符串<br>
-┣ 📜branches:存储所有分支名与提交的映射<br>
+┣ 📜branches:存储所有分支名与提交的TreeMap<br>
 ┣ 📂commits:存储所有提交<br>
-┃ ┗ 📜1760c3ce6ced84ee5483c6e1f91d63d8b082fbaa（文件名为commit的sha1）<br>
+┃ ┗ 📜6ce94a8e54d7a942b9ecf8ca60abcb66d547cc37（文件名为commit的sha1）<br>
 ┣ 📂files:存储所有历史版本文件，文件名为file的sha1<br>
 ┣ 📂snapshot:存储当前版本被改变或删除的文件名与sha1的映射<br>
 ┃ ┣ 📜changed:内容是一个TreeMap\<String, String\>，键是被修改的文件名，值是staging-area中的文件的sha1<br>

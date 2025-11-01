@@ -34,6 +34,9 @@ public class Main {
                 }
                 break;
             case "rm":
+                if (validateNumArgs(argumentSize, 1)) {
+                    Repository.removeFile(args[1]);
+                }
                 break;
             case "log":
                 break;
