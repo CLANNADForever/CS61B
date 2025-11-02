@@ -1,4 +1,8 @@
 package gitlet;
+import java.util.HashMap;
+import java.util.Set;
+
+import static gitlet.Repository.CWD;
 import static gitlet.Utils.*;
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author Wangjishi
@@ -10,38 +14,63 @@ public class Main {
      */
     public static void main(String[] args) {
         // 如果无命令，打印信息并退出
-        if (args == null) {
+        if (args == null || args.length == 0) {
             message("Please enter a command");
             return;
         }
 
-        String firstArg = args[0];
+        String command = args[0];
         int argumentSize = args.length - 1;
-        switch(firstArg) {
+
+        // 建立所有命令与参数数量对应的映射
+        HashMap<String, Set<Integer>> allCommand = new HashMap<>();
+        allCommand.put("init", Set.of(0));
+        allCommand.put("add", Set.of(1));
+        allCommand.put("commit", Set.of(1));
+        allCommand.put("rm", Set.of(1));
+        allCommand.put("log", Set.of(0));
+        allCommand.put("global-log", Set.of(0));
+        allCommand.put("find", Set.of(1));
+        allCommand.put("status", Set.of(0));
+        allCommand.put("checkout", Set.of(1, 2, 3)); // 多种含义的命令
+        allCommand.put("branch", Set.of(1));
+        allCommand.put("rm-branch", Set.of(1));
+        allCommand.put("reset", Set.of(1));
+        allCommand.put("merge", Set.of(1));
+
+        // 命令不存在
+        if (!allCommand.containsKey(command)) {
+            message("No command with that name exists.");
+            return;
+        }
+
+        // 参数数量错误
+        if (!allCommand.get(command).contains(argumentSize)) {
+            message("Incorrect operands.");
+            return;
+        }
+
+        // 在未初始化时使用非init命令
+        if (!join(CWD, ".gitlet").exists() && !command.equals("init")) {
+            message("Not in an initialized Gitlet directory.");
+            return;
+        }
+
+        switch(command) {
             case "init":
-                if (validateNumArgs(argumentSize, 0)) {
-                    Repository.initGitlet();
-                }
+                Repository.initGitlet();
                 break;
             case "add":
-                if (validateNumArgs(argumentSize, 1)) {
-                    Repository.addFile(args[1]);
-                }
+                Repository.addFile(args[1]);
                 break;
             case "commit":
-                if (validateNumArgs(argumentSize, 1)) {
-                    Repository.commitWithMessage(args[1]);
-                }
+                Repository.commitWithMessage(args[1]);
                 break;
             case "rm":
-                if (validateNumArgs(argumentSize, 1)) {
-                    Repository.removeFile(args[1]);
-                }
+                Repository.removeFile(args[1]);
                 break;
             case "log":
-                if (validateNumArgs(argumentSize, 0)) {
-                    Repository.printLog();
-                }
+                Repository.printLog();
                 break;
             case "global-log":
                 break;
@@ -59,9 +88,6 @@ public class Main {
                 break;
             case "merge":
                 break;
-            default:
-                message("No command with that name exists.");
-                return;
         }
     }
 

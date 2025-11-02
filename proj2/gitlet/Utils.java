@@ -236,22 +236,4 @@ static String sha1(List<Object> vals) {
         System.out.printf(msg, args);
         System.out.println();
     }
-
-    /* MY UTILS */
-
-    /**
-     * Checks the number of arguments versus the expected number,
-     * print message if they do not match.
-     *
-     * @param argumentSize Size of argument from command line
-     * @param n Number of expected arguments
-     */
-    public static boolean validateNumArgs(int argumentSize, int n) {
-        if (argumentSize != n) {
-            message("Incorrect operands.");
-            return false;
-        } else {
-            return true;
-        }
-    }
 }
