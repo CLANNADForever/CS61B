@@ -1,0 +1,24 @@
+# Test for the add command.
+I definitions.inc
+# Setup: Initialize a gitlet repository
+> init
+<<<
+
+# Case 1: Add a new file
++ wug.txt wug.txt
+> add wug.txt
+<<<
+
+# Check the contents of the staging area (optional but good practice)
+# This part would require a custom command or manual inspection.
+# For now, we assume commit will verify its correctness.
+
+# Case 2: Attempt to add a nonexistent file
+> add 404.txt
+File does not exist.
+<<<
+
+# Case 3: Add another file
++ notwug.txt notwug.txt
+> add notwug.txt
+<<<

@@ -1,0 +1,92 @@
+# Test for the commit command.
+
+I definitions.inc
+
+# Setup
+> init
+<<<
+
+# Case 1: Test initial commit. The log should show a single commit.
+# The checkout command depends on a correct initial commit.
+> log
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+
+# Case 2: Add a file and commit.
++ wug.txt wug.txt
+> add wug.txt
+<<<
+> commit "added wug.txt"
+<<<
+
+# After commit, log should show the new commit on top.
+> log
+===
+${COMMIT_HEAD}
+added wug.txt
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+
+# Case 3: Try to commit with an empty staging area.
+> commit "should fail"
+No changes added to the commit.
+<<<
+
+# Case 4: Try to commit with a blank message.
++ notwug.txt notwug.txt
+> add notwug.txt
+<<<
+> commit ""
+Please enter a commit message.
+<<<
+
+# Case 5: Verify staging area is cleared after a successful commit.
+# First, add two files and commit them.
++ a.txt a.txt
++ b.txt b.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> commit "added a and b"
+<<<
+# Now, modify a.txt, add it, then check status.
++ a.txt a_modified.txt
+> add a.txt
+<<<
+# At this point, a.txt should be in the staging area.
+# Now, we do another commit WITHOUT adding anything new.
+# It should fail because the staging area should have been cleared by the previous commit.
+# Let's verify this by making a new commit that should succeed.
++ c.txt c.txt
+> add c.txt
+<<<
+> commit "added c"
+<<<
+# If this commit succeeded, it implies the staging area was clear before adding c.txt.
+# We can check the log to be sure.
+> log
+===
+${COMMIT_HEAD}
+added c
+
+===
+${COMMIT_HEAD}
+added a and b
+
+===
+${COMMIT_HEAD}
+added wug.txt
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*

@@ -1,0 +1,19 @@
+# Test for the init command.
+
+# Case 1: Normal initialization
+> init
+<<<
+E .gitlet
+E .gitlet/commits
+E .gitlet/files
+E .gitlet/snapshot/changed
+E .gitlet/snapshot/removed
+E .gitlet/staging-area
+E .gitlet/branches
+E .gitlet/currentBranch
+E .gitlet/headPointer
+
+# Case 2: Attempt to initialize again in the same directory
+> init
+A Gitlet version-control system already exists in the current directory.
+<<<

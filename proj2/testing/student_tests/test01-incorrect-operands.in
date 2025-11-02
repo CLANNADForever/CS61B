@@ -1,0 +1,41 @@
+# Test for incorrect number of operands for various commands.
+
+# Init command with extra argument
+> init extra
+Incorrect operands.
+<<<
+
+# Add command with no arguments
+> add
+Incorrect operands.
+<<<
+
+# Add command with too many arguments
+> add file1 file2
+Incorrect operands.
+<<<
+
+# Commit command with no arguments
+> commit
+Incorrect-operands.
+<<<
+
+# Commit command with too many arguments
+> commit "a message" extra
+Incorrect operands.
+<<<
+
+# Rm command with no arguments
+> rm
+Incorrect operands.
+<<<
+
+# Rm command with too many arguments
+> rm file1 file2
+Incorrect operands.
+<<<
+
+# Log command with extra argument
+> log extra
+Incorrect operands.
+<<<

@@ -1,0 +1,108 @@
+# Test for the rm command.
+
+I definitions.inc
+
+# Setup
+> init
+<<<
++ a.txt a.txt
++ b.txt b.txt
++ c.txt c.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> commit "added a and b"
+<<<
+
+# D C1_UID ${1}
+
+# Case 1: Remove a file that is staged but not tracked.
+# c.txt is not in the commit, let's stage it.
+> add c.txt
+<<<
+# Now remove it from the staging area.
+> rm c.txt
+<<<
+# After rm, c.txt should still exist in the working directory
+# because it was not tracked in the head commit.
+E c.txt
+# A new commit should not contain c.txt.
+> commit "commit after rm c"
+No changes added to the commit.
+<<<
+
+# Case 2: Remove a file that is tracked but not staged.
+# a.txt is tracked. Let's remove it.
+> rm a.txt
+<<<
+# After rm, a.txt should NOT exist in the working directory.
+* a.txt
+# A new commit should reflect the removal.
+> commit "removed a"
+<<<
+# Log should show the new commit.
+> log
+===
+${COMMIT_HEAD}
+removed a
+
+===
+${COMMIT_HEAD}
+added a and b
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+
+
+# Let's check out the previous commit to verify 'a.txt' is gone.
+# > checkout ${C1_UID} -- a.txt
+# File does not exist in that commit.
+# <<<
+
+# Case 3: Failure case - remove a file that is neither staged nor tracked.
+> rm d.txt
+No reason to remove the file.
+<<<
+
+# Case 4: Remove a file that is BOTH tracked and staged for modification.
+
+# First, let's restore b.txt from the initial state
+# > checkout ${C1_UID} -- b.txt
+# <<<
+# = b.txt b.txt
+# Now, modify and stage b.txt
++ b.txt b_modified.txt
+> add b.txt
+<<<
+# Now, remove it.
+> rm b.txt
+<<<
+# It should be removed from the working directory.
+* b.txt
+# And a commit should not complain about an empty staging area,
+# because the removal itself is a change to be committed.
+> commit "removed modified b"
+<<<
+# The log should now have a new commit.
+> log
+===
+${COMMIT_HEAD}
+removed modified b
+
+===
+${COMMIT_HEAD}
+removed a
+
+===
+${COMMIT_HEAD}
+added a and b
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*

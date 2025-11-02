@@ -1,0 +1,17 @@
+# Test for general command failures.
+
+# Case 1: No arguments provided
+>
+Please enter a command.
+<<<
+
+# Case 2: Nonexistent command (single word)
+> no-such-command
+No command with that name exists.
+<<<
+
+# Case 3: Nonexistent command (multiple words treated as one)
+# Note: The framework treats the whole line as the first argument if no ""
+> what the fuck
+No command with that name exists.
+<<<
