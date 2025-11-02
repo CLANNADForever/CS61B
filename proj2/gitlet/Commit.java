@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.Serializable;
 import java.util.Date; // TODO: You'll likely use this in this class
@@ -52,15 +53,15 @@ public class Commit implements Serializable {
         this.message = "initial commit";
         timeStamp = 0L;
         this.files = new TreeMap<>();
-        System.out.println(this);
     }
 
     /** 按照指定格式输出日志。仅包含本提交的信息 */
     public void printLog(String commitHash) {
         Date date = new Date(timeStamp);
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         message("===");
         message("commit " + commitHash);
-        message("Date: " + date);
+        message("Date: " + formatter.format(date));
         message(message);
         message("");
     }

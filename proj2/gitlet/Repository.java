@@ -73,7 +73,7 @@ public class Repository {
             writeContents(join(GITLET_DIR, "currentBranch"), "master"); // 默认一开始为master
             put(GITLET_DIR, "branches", "master", hash);
         } else {
-            throw error("A Gitlet version-control system already exists in the current directory.");
+            message("A Gitlet version-control system already exists in the current directory.");
         }
     }
 
@@ -116,17 +116,26 @@ public class Repository {
 
     /** 传入提交信息，进行一次提交 */
     public static void commitWithMessage(String msg) {
-        Commit parentCommit = readCommit(headPointer);
-        Commit c = new Commit(msg, headPointer, parentCommit.files);
+        // 信息为空，应报错
+        if (msg == null || msg.trim().isEmpty()) {
+            System.out.println("Please enter a commit message.");
+            return;
+        }
+
         TreeMap<String, String> changedMap = readMap(SNAPSHOT_DIR, "changed");
         TreeMap<String, String> removedMap = readMap(SNAPSHOT_DIR, "removed");
+        // 无任何修改和删除，应报错
+        if (changedMap.isEmpty() && removedMap.isEmpty()) {
+            message("No changes added to the commit.");
+            return;
+        }
 
-        // 根据changedMap，将修改的文件在commit的files中改为修改后的sha1值
+        // 根据changedMap和removedMap，修改提交的files
+        Commit parentCommit = readCommit(headPointer);
+        Commit c = new Commit(msg, headPointer, parentCommit.files);
         for (String fileName : changedMap.keySet()) { // 此处fileName是"1.txt"，因而能修改" "1.txt": foobar "映射
             c.files.put(fileName, changedMap.get(fileName));
         }
-
-        // 根据removedMap，将删除的文件从commit的files中移除
         for (String fileName : removedMap.keySet()) { // 同理为fileName
             c.files.remove(fileName);
         }
@@ -168,10 +177,9 @@ public class Repository {
         // 如果该文件被跟踪，则暂存删除
         if (commitMap.containsKey(fileName)) {
             put(SNAPSHOT_DIR, "removed", fileName, null); // 删除区值置为null，当集合使用
+            // 如果用户未删除，则删除文件
+            if (join(CWD, fileName).exists()) restrictedDelete(fileName);
         }
-
-        // 如果用户未删除，则删除文件
-        if (join(CWD, fileName).exists()) restrictedDelete(fileName);
     }
 
     /** 从head提交开始反向打印提交信息，直到初始提交 */
