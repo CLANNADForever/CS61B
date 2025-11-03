@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.TreeMap;
 import static gitlet.Utils.*;
 
@@ -193,6 +194,15 @@ public class Repository {
         }
     }
 
+    /** 按任意顺序打印所有提交的日志信息 */
+    public static void printGlobalLog() {
+        List<String> commitHashs = plainFilenamesIn(COMMIT_DIR);
+        for (String commitHash : commitHashs) {
+            Commit c = readCommit(commitHash);
+            c.printLog(commitHash);
+        }
+    }
+
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
     private static void writeCommit(Commit commit) {
         String hash = sha1(commit.toString());
@@ -303,5 +313,11 @@ public class Repository {
         File f = join(dir, fileName);
         writeContents(f, newValue);
         return newValue;
+    }
+
+    /** 读取并返回字符串文件的值 */
+    private static String readStringFile(File dir, String fileName) {
+        File f = join(dir, fileName);
+        return readContentsAsString(f);
     }
 }

@@ -73,6 +73,7 @@ public class Main {
                 Repository.printLog();
                 break;
             case "global-log":
+                Repository.printGlobalLog();
                 break;
             case "find":
                 break;
