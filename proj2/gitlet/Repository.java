@@ -228,12 +228,31 @@ public class Repository {
 
     /** 将指定文件从头提交中检出 */
     public static void checkoutFile(String fileName) {
-
+        checkoutFileInCommit(headPointer, fileName); // 该命令为特殊情况，可直接调用普遍情况的逻辑
     }
 
-    /** 将指定文件从制定提交中检出 */
+    /** 将指定文件从指定提交中检出 */
     public static void checkoutFileInCommit(String commitHash, String fileName) {
+        Commit c = readCommit(commitHash);
+        if (c == null) { // 不存在此提交
+            message("No commit with that id exists.");
+            return;
+        }
+        if (!c.files.containsKey(fileName)) { // 提交中不存在此文件
+            message("File does not exist in that commit.");
+            return;
+        }
 
+        File fileInCommit = join(FILE_DIR, c.files.get(fileName));
+        File fileInCWD = join(CWD, fileName);
+        if (!fileInCWD.exists()) {
+            try {
+                fileInCWD.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        writeContents(fileInCWD, readContentsAsString(fileInCommit)); // 会覆盖而不是追加
     }
 
     /** 检出并切换到指定分支 */
@@ -254,6 +273,9 @@ public class Repository {
     }
 
 
+    // 以下为私有方法，大部分由于需要反复使用而设立
+
+    // 提交（Commit）相关
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
     private static void writeCommit(Commit commit) {
         String hash = sha1(commit.toString());
@@ -266,6 +288,20 @@ public class Repository {
         writeObject(d, commit);
     }
 
+    /** 用sha1（ID）读取出一个提交，若不存在则返回null */
+    private static Commit readCommit(String commitHash) {
+        if (commitHash == null) {
+            return null;
+        }
+        File f = join(COMMIT_DIR, commitHash);
+        if (f.exists()) {
+            return readObject(f, Commit.class);
+        } else {
+            return null;
+        }
+    }
+
+    // 文件相关
     /** 向指定文件夹写入一个文件，写入时文件名为sha1序列，内容为文件内容 */
     private static void writeFile(File dir, File file) {
         String fileString = readContentsAsString(file);
@@ -297,18 +333,7 @@ public class Repository {
         return f.exists();
     }
 
-    /** 用sha1读取出一个提交 */
-    private static Commit readCommit(String commitHash) {
-        if (commitHash == null) {
-            return null;
-        }
-        File f = join(COMMIT_DIR, commitHash);
-        Commit c = readObject(f, Commit.class);
-        return c;
-    }
-
-    // 以下为三个map文件的辅助方法
-
+    // Map文件相关
     /** 从指定文件中读取并返回map */
     private static TreeMap<String, String> readMap(File dir, String fileName) {
         File f = join(dir, fileName);
@@ -322,18 +347,10 @@ public class Repository {
         return map.get(key);
     }
 
-//    /** 从指定map文件返回是否存在某个键 */
-//    private static boolean containKey(File dir, String fileName, String key) {
-//        File f = join(dir, fileName);
-//        TreeMap<String, String> map = readObject(f, TreeMap.class);
-//        return map.containsKey(key);
-//    }
-
     /** 向内容为Map的文件中写入一个键值对，若存在键，则覆盖其值 */
     private static void put(File dir, String fileName, String key, String value) {
         File f = join(dir, fileName);
         TreeMap<String, String> map = readObject(f, TreeMap.class);
-
         map.put(key, value);
         writeObject(f, map);
     }
@@ -343,7 +360,6 @@ public class Repository {
         File f = join(dir, fileName);
         TreeMap<String, String> map = readObject(f, TreeMap.class);
         assert map.containsKey(key);
-
         map.remove(key);
         writeObject(f, map);
     }
@@ -351,14 +367,11 @@ public class Repository {
     /** 清空一个文件中map所有的键值对 */
     private static void clearMap(File dir, String fileName) {
         File f = join(dir, fileName);
-
         // 只需创建空map并写入
-        TreeMap<String, String> map = new TreeMap<>();
-        writeObject(f, map);
+        writeObject(f, new TreeMap<>());
     }
 
-    // 以下为字符串文件相关辅助方法
-
+    // 字符串文件相关
     /** 改变字符串文件的值，并返回该值 */
     private static String changedStringFile(File dir, String fileName, String newValue) {
         File f = join(dir, fileName);
