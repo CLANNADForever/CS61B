@@ -196,10 +196,28 @@ public class Repository {
 
     /** 按任意顺序打印所有提交的日志信息 */
     public static void printGlobalLog() {
-        List<String> commitHashs = plainFilenamesIn(COMMIT_DIR);
-        for (String commitHash : commitHashs) {
+        List<String> commitHashes = plainFilenamesIn(COMMIT_DIR);
+        assert commitHashes != null; // 始终有初始提交
+        for (String commitHash : commitHashes) {
             Commit c = readCommit(commitHash);
             c.printLog(commitHash);
+        }
+    }
+
+    /** 传入提交信息，打印对应提交的id */
+    public static void findCommit(String msg) {
+        List<String> commitHashes = plainFilenamesIn(COMMIT_DIR);
+        assert commitHashes != null; // 始终有初始提交
+        int isFound = 0;
+        for (String commitHash : commitHashes) {
+            Commit c = readCommit(commitHash);
+            if (c.message.equals(msg)) {
+                isFound = 1;
+                message(commitHash);
+            }
+        }
+        if (isFound == 0) {
+            message("Found no commit with that message.");
         }
     }
 

@@ -76,6 +76,7 @@ public class Main {
                 Repository.printGlobalLog();
                 break;
             case "find":
+                Repository.findCommit(args[1]);
                 break;
             case "status":
                 break;

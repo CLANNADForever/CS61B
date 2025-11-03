@@ -21,7 +21,7 @@ public class Commit implements Serializable {
      */
 
     /** The message of this Commit. */
-    private String message;
+    public String message;
 
     /** 时间戳 */
     private long timeStamp;
