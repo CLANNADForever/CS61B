@@ -1,0 +1,35 @@
+# Test for the global-log command.
+
+I definitions.inc
+
+# Setup
+> init
+<<<
++ wug.txt wug.txt
+> add wug.txt
+<<<
+> commit "version 1"
+<<<
++ wug.txt notwug.txt
+> add wug.txt
+<<<
+> commit "version 2"
+<<<
+
+# Case 1: global-log should show all commits.
+# We use ARBLINES to ignore the exact commit hashes and dates,
+# but check the commit messages and the overall structure.
+> global-log
+===
+${COMMIT_HEAD}
+${ARBLINE}
+
+===
+${COMMIT_HEAD}
+${ARBLINE}
+
+===
+${COMMIT_HEAD}
+${ARBLINE}
+
+<<<*

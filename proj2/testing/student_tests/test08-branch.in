@@ -1,0 +1,20 @@
+# Test for the branch command.
+
+I definitions.inc
+
+# Setup
+> init
+<<<
+
+# Case 1: Create a new branch named "dev".
+> branch dev
+<<<
+
+# Case 2: Failure case - try to create a branch that already exists.
+> branch dev
+A branch with that name already exists.
+<<<
+
+# Case 3: Create another branch.
+> branch feature-x
+<<<

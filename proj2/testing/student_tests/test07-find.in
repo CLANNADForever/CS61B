@@ -1,0 +1,41 @@
+# Test for the find command.
+
+I definitions.inc
+
+# Setup
+> init
+<<<
++ a.txt a.txt
+> add a.txt
+<<<
+> commit "added file a"
+<<<
++ b.txt b.txt
+> add b.txt
+<<<
+> commit "added file b"
+<<<
++ c.txt c.txt
+> add c.txt
+<<<
+> commit "added file a"
+<<<
+
+# Case 1: Find commits with a unique message.
+# We only check that it prints *something*. The exact hash is dynamic.
+# The ARBLINE variable matches any single line.
+> find "added file b"
+${ARBLINE}
+<<<*
+
+# Case 2: Find commits with a duplicate message.
+# It should print two lines, each being a commit hash.
+> find "added file a"
+${ARBLINE}
+${ARBLINE}
+<<<*
+
+# Case 3: Failure case - find a message that does not exist.
+> find "nonexistent message"
+Found no commit with that message.
+<<<
