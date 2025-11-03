@@ -221,6 +221,39 @@ public class Repository {
         }
     }
 
+    /** 打印当前文件和分支状态 */
+    public static void printStatus() {
+
+    }
+
+    /** 将指定文件从头提交中检出 */
+    public static void checkoutFile(String fileName) {
+
+    }
+
+    /** 将指定文件从制定提交中检出 */
+    public static void checkoutFileInCommit(String commitHash, String fileName) {
+
+    }
+
+    /** 检出并切换到指定分支 */
+    public static void checkoutBranch(String branchName) {
+
+    }
+
+    /** 创建一个指向头提交的新分支（不会切换分支） */
+    public static void createBranch(String branchName) {
+        // 若分支名已经存在，报错并返回
+        if (branches.containsKey(branchName)) { // branches会被反复读入，因此初始化时已经读好
+            message("A branch with that name already exists.");
+            return;
+        }
+
+        // 否则新建一个指向头提交的分支（不切换到新分支）
+        put(GITLET_DIR, "branches", branchName, headPointer);
+    }
+
+
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
     private static void writeCommit(Commit commit) {
         String hash = sha1(commit.toString());

@@ -133,7 +133,7 @@
   2. 将文件在头提交中存在的版本取出并放入工作目录，如果工作目录中已有该文件的版本，则覆盖它。
 
 
-- **checkoutCommitFile(commitId, fileName)**: **TODO**: 尝试用6位数字进行搜索
+- **checkoutFileInCommit(commitId, fileName)**: **TODO**: 尝试用6位数字进行搜索
   1. 若ID不存在，打印错误信息"No commit with that id exists"，若提交中无文件，打印错误信息"File does not exist in that commit."。
   2. 将给定ID提交中存在的文件版本取出并放入工作目录，如果工作目录中已有该文件的版本，则覆盖它。
 

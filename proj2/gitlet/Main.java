@@ -79,10 +79,21 @@ public class Main {
                 Repository.findCommit(args[1]);
                 break;
             case "status":
+                Repository.printStatus();
                 break;
             case "checkout":
+                if (argumentSize == 1) { // checkout [branch name]
+                    Repository.checkoutBranch(args[1]);
+                } else if (argumentSize == 2) { // checkout -- [file name]
+                    if (args[1].equals("--")) Repository.checkoutFile(args[2]);
+                    else message("Incorrect operands.");
+                } else { // checkout [commit id] -- [file name]
+                    if (args[2].equals("--")) Repository.checkoutFileInCommit(args[1], args[3]);
+                    else message("Incorrect operands.");
+                }
                 break;
             case "branch":
+                Repository.createBranch(args[1]);
                 break;
             case "rm-branch":
                 break;

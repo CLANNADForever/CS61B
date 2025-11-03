@@ -4,7 +4,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.Serializable;
-import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.Date;
 import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
@@ -14,7 +14,6 @@ import static gitlet.Utils.*;
  */
 public class Commit implements Serializable {
     /**
-     *
      * List all instance variables of the Commit class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided one example for `message`.
@@ -24,14 +23,14 @@ public class Commit implements Serializable {
     public String message;
 
     /** 时间戳 */
-    private long timeStamp;
+    private final long timeStamp;
 
     /** 父节点的“指针”，为了避免序列化时额外开销，存储其sha1哈希值。*/
     public String parentHash1 = null;
     public String parentHash2 = null;
 
     /** 指向文件内容的“指针”，同理使用sha1哈希值，为记录文件变化，需同时存储名字和sha1。*/
-    public TreeMap<String, String> files = null;
+    public TreeMap<String, String> files;
 
     public Commit(String message, String parentHash1, TreeMap<String, String> files) {
         this.message = message;
