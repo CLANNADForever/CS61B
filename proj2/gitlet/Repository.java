@@ -155,7 +155,7 @@ public class Repository {
         // 更新状态
         writeCommit(c);
         headPointer = changedStringFile(GITLET_DIR, "headPointer", sha1(c.toString())); // 更新头指针sha1
-        put(GITLET_DIR, "branches", currentBranch, headPointer);
+        put(GITLET_DIR, "branches", currentBranch, headPointer); // 将当前分支向前推进
         clearMap(SNAPSHOT_DIR, "changed");
         clearMap(SNAPSHOT_DIR, "removed");
     }
@@ -253,7 +253,6 @@ public class Repository {
         message("");
     }
 
-
     /** 将指定文件从头提交中检出 */
     public static void checkoutFile(String fileName) {
         checkoutFileInCommit(headPointer, fileName); // 该命令为特殊情况，可直接调用普遍情况的逻辑
@@ -287,14 +286,38 @@ public class Repository {
     public static void checkoutBranch(String branchName) {
         if (!branches.containsKey(branchName)) {
             message("No such branch exists.");
+            return;
         }
         if (branchName.equals(currentBranch)) {
             message("No need to checkout the current branch.");
+            return;
         }
-
         // 当前工作区存在未被跟踪且将被覆盖的文件
         String commitHash = get(GITLET_DIR, "branches", branchName);
-        Commit c = readCommit(commitHash);
+        Set<String> branchFileNames = readCommit(commitHash).files.keySet();
+        TreeSet<String> untrackedFileNames = getUntrackedFile();
+        for (String fileName : branchFileNames) {
+            if (untrackedFileNames.contains(fileName)) { // 未被跟踪且将被检出覆盖
+                message("There is an untracked file in the way; delete it, or add and commit it first.");
+                return;
+            }
+        }
+        // 删除当前分支中存在，但给定分支没有的文件
+        Commit cHead = readCommit(headPointer);
+        for (String fileName : cHead.files.keySet()) {
+            if (!branchFileNames.contains(fileName)) {
+                restrictedDelete(fileName);
+            }
+        }
+        // 检出指定分支的所有文件
+        for (String fileName : branchFileNames) {
+            checkoutFileInCommit(commitHash, fileName);
+        }
+        // 切换分支并清空暂存区
+        currentBranch = changedStringFile(GITLET_DIR, "currentBranch", branchName); // 实际上赋值无意义，只是含义更为直观
+        headPointer = changedStringFile(GITLET_DIR, "headPointer", commitHash);
+        clearMap(SNAPSHOT_DIR, "changed");
+        clearMap(SNAPSHOT_DIR, "removed");
     }
 
     /** 创建一个指向头提交的新分支（不会切换分支） */
@@ -317,16 +340,18 @@ public class Repository {
         TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
         TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
         TreeMap<String, String> removedFiles = readMap(SNAPSHOT_DIR, "removed");
-        TreeSet<String> unstagedFileNames = new TreeSet<>(); //
+        TreeSet<String> unstagedFileNames = new TreeSet<>();
 
         for (String fileName : currentCommitFiles.keySet()) {
             // 当前提交跟踪，但工作目录删除，且删除操作未被暂存，属于“未暂存”
-            if (!join(CWD, fileName).exists() && !removedFiles.containsKey(fileName)) {
-                unstagedFileNames.add(fileName + " (deleted)");
-                continue;
+            if (!join(CWD, fileName).exists()) {
+                if (!removedFiles.containsKey(fileName)) {
+                    unstagedFileNames.add(fileName + " (deleted)");
+                }
+                continue; // 即使未被添加，也不应进到下一部分，否则会去读取不存在的文件
             }
             // 当前提交跟踪，但工作目录修改，属于“未暂存”
-            String fileHash = sha1(readContentsAsString(join(CWD, fileName))); // FIXME
+            String fileHash = sha1(readContentsAsString(join(CWD, fileName)));
             if (!fileHash.equals(currentCommitFiles.get(fileName))) { // 映射的值为跟踪文件的sha1
                 unstagedFileNames.add(fileName + " (modified)");
                 continue;

@@ -121,8 +121,8 @@ d.txt
 # Final status check with a mix of everything.
 > status
 === Branches ===
-*master
 dev
+*master
 
 === Staged Files ===
 b.txt
