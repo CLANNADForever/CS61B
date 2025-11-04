@@ -293,26 +293,13 @@ public class Repository {
             return;
         }
         // 当前工作区存在未被跟踪且将被覆盖的文件
-        String commitHash = get(GITLET_DIR, "branches", branchName);
-        Set<String> branchFileNames = readCommit(commitHash).files.keySet();
-        TreeSet<String> untrackedFileNames = getUntrackedFile();
-        for (String fileName : branchFileNames) {
-            if (untrackedFileNames.contains(fileName)) { // 未被跟踪且将被检出覆盖
-                message("There is an untracked file in the way; delete it, or add and commit it first.");
-                return;
-            }
+        String commitHash = branches.get(branchName);
+        if (isUntrackedOverwritten(commitHash)) {
+            message("There is an untracked file in the way; delete it, or add and commit it first.");
+            return;
         }
-        // 删除当前分支中存在，但给定分支没有的文件
-        Commit cHead = readCommit(headPointer);
-        for (String fileName : cHead.files.keySet()) {
-            if (!branchFileNames.contains(fileName)) {
-                restrictedDelete(fileName);
-            }
-        }
-        // 检出指定分支的所有文件
-        for (String fileName : branchFileNames) {
-            checkoutFileInCommit(commitHash, fileName);
-        }
+        // 检出给定分支所指提交
+        checkoutCommit(commitHash);
         // 切换分支并清空暂存区
         currentBranch = changedStringFile(GITLET_DIR, "currentBranch", branchName); // 实际上赋值无意义，只是含义更为直观
         headPointer = changedStringFile(GITLET_DIR, "headPointer", commitHash);
@@ -327,15 +314,74 @@ public class Repository {
             message("A branch with that name already exists.");
             return;
         }
-
         // 否则新建一个指向头提交的分支（不切换到新分支）
         put(GITLET_DIR, "branches", branchName, headPointer);
+    }
+
+    /** 删除给定的分支（仅删除分支的指针） */
+    public static void removeBranch(String branchName) {
+        if (!branches.containsKey(branchName)) {
+            message("A branch with that name does not exist.");
+            return;
+        }
+        if (branchName.equals(currentBranch)) {
+            message("Cannot remove the current branch.");
+            return;
+        }
+        remove(GITLET_DIR, "branches", branchName);
+    }
+
+    /** 重置仓库状态至指定提交 */
+    public static void reset(String commitHash) {
+        if (!join(COMMIT_DIR, commitHash).exists()) {
+            message("No commit with that id exists.");
+            return;
+        }
+        if (isUntrackedOverwritten(commitHash)) {
+            message("There is an untracked file in the way; delete it, or add and commit it first.");
+            return;
+        }
+        // 检出指定提交
+        checkoutCommit(commitHash);
+        // 移动所在分支和头指针至给定提交，并清空暂存区
+        put(GITLET_DIR, "branches", currentBranch, commitHash);
+        headPointer = changedStringFile(GITLET_DIR, "headPointer", commitHash);
+        clearMap(SNAPSHOT_DIR, "changed");
+        clearMap(SNAPSHOT_DIR, "removed");
     }
 
 
     // 以下为私有方法，大部分由于需要复用或调整结构而设立
 
-    // 仓库状态相关
+    // 仓库状态相关，涉及较复杂的逻辑
+    /** 对一个给定提交的检出 */
+    private static void checkoutCommit(String commitHash) {
+        Set<String> commitFileNames = readCommit(commitHash).files.keySet();
+        // 删除当前分支中存在，但给定分支没有的文件
+        Commit cHead = readCommit(headPointer);
+        for (String fileName : cHead.files.keySet()) {
+            if (!commitFileNames.contains(fileName)) {
+                restrictedDelete(fileName);
+            }
+        }
+        // 检出指定分支的所有文件
+        for (String fileName : commitFileNames) {
+            checkoutFileInCommit(commitHash, fileName);
+        }
+    }
+
+    /** 检查对给定提交检出是否会覆盖未跟踪文件 */
+    private static boolean isUntrackedOverwritten(String commitHash) {
+        Set<String> commitFileNames = readCommit(commitHash).files.keySet();
+        TreeSet<String> untrackedFileNames = getUntrackedFile();
+        for (String fileName : commitFileNames) {
+            if (untrackedFileNames.contains(fileName)) { // 未被跟踪且将被检出覆盖
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static TreeSet<String> getUnstagedFile() {
         TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
         TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
@@ -390,6 +436,8 @@ public class Repository {
         }
         return untrackedFileNames;
     }
+
+
 
     // 提交（Commit）相关
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */

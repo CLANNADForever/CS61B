@@ -96,8 +96,10 @@ public class Main {
                 Repository.createBranch(args[1]);
                 break;
             case "rm-branch":
+                Repository.removeBranch(args[1]);
                 break;
             case "reset":
+                Repository.reset(args[1]);
                 break;
             case "merge":
                 break;

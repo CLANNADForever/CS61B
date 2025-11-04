@@ -1,0 +1,44 @@
+# Test for the rm-branch command.
+
+I definitions.inc
+
+# --- Setup ---
+> init
+<<<
++ a.txt a.txt
+> add a.txt
+<<<
+> commit "initial commit with a"
+<<<
+
+# Create some branches to work with
+> branch dev
+<<<
+> branch feature-x
+<<<
+
+# --- Test Cases ---
+
+# Case 1: Successfully remove an existing branch.
+# We are currently on 'master', so removing 'feature-x' should be safe.
+> rm-branch feature-x
+<<<
+
+
+
+# Case 2: Failure - attempt to remove a nonexistent branch.
+> rm-branch nonexistent-branch
+A branch with that name does not exist.
+<<<
+
+# Case 3: Critical Failure - attempt to remove the current branch.
+# We are on 'master', so trying to remove 'master' must fail.
+> rm-branch master
+Cannot remove the current branch.
+<<<
+
+# Let's switch to 'dev' and try to remove 'master'. This should succeed.
+> checkout dev
+<<<
+> rm-branch master
+<<<

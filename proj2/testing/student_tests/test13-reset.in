@@ -1,0 +1,119 @@
+# Test for the reset command.
+
+I definitions.inc
+
+# --- Setup: Create a clear, linear history ---
+
+> init
+<<<
+
+# Commit v1: Add a.txt and b.txt
++ a.txt a.txt
++ b.txt b.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> commit "v1: add a and b"
+<<<
+
+# Commit v2: Modify a.txt, add c.txt, and KEEP b.txt
++ a.txt a_modified.txt
++ c.txt c.txt
+> add a.txt
+<<<
+> add c.txt
+<<<
+> commit "v2: modify a, add c"
+<<<
+
+# Capture the commit hashes for later use.
+> log
+===
+${COMMIT_HEAD}
+v2: modify a, add c
+
+===
+${COMMIT_HEAD}
+v1: add a and b
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+D UID_V2 "${1}"
+D UID_V1 "${2}"
+
+# --- Test Successful Reset ---
+
+# Current state (at v2): a.txt is v2, b.txt is v1, c.txt exists.
+= a.txt a_modified.txt
+= b.txt b.txt
+E c.txt
+
+# Case 1: Reset the current branch (master) to the state of commit v1.
+> reset ${UID_V1}
+<<<
+
+# After reset, the working directory must be identical to the state of v1.
+# And HEAD should now point to v1.
+# 1. a.txt should revert to its v1 content.
+= a.txt a.txt
+# 2. b.txt should still exist with its v1 content.
+= b.txt b.txt
+# 3. c.txt was only added in v2, so it must be deleted from the working directory.
+* c.txt
+
+# 4. The log should now show v1 as the head commit.
+> log
+===
+${COMMIT_HEAD}
+v1: add a and b
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+
+# --- Test Failure Case: Untracked File Would Be Overwritten ---
+
+# Current state: We are at commit v1. Files are a.txt (v1) and b.txt (v1).
+
+# Now, create a new, untracked file named 'c.txt' in the working directory.
+# This file did not exist in commit v1, but it DOES exist in commit v2.
++ c.txt c_modified.txt
+
+# Case 2: Attempt to reset forward to v2.
+# This operation would require creating a file 'c.txt' with content from commit v2.
+# However, an untracked file with the same name is already in the way.
+# Therefore, the reset MUST fail to protect the user's work.
+> reset ${UID_V2}
+There is an untracked file in the way; delete it, or add and commit it first.
+<<<
+
+# After the failed reset, the working directory should remain untouched.
+# The untracked c.txt should still be there with its own content.
+= c.txt c_modified.txt
+# a.txt should still be at its v1 state.
+= a.txt a.txt
+# The log should still show v1 as the head.
+> log
+===
+${COMMIT_HEAD}
+v1: add a and b
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+
+
+# --- Test Failure Case: Nonexistent Commit ---
+
+# Case 3: Attempt to reset to a commit ID that does not exist.
+> reset 1234567890abcdef1234567890abcdef12345678
+No commit with that id exists.
+<<<
