@@ -1,0 +1,103 @@
+# Test for the branch-oriented checkout command.
+
+I definitions.inc
+
+# --- Setup: Create a divergent history ---
+> init
+<<<
+# Master branch: has a.txt and b.txt
++ a.txt a.txt
++ b.txt b.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> commit "master: add a and b"
+<<<
+
+# Create a dev branch and switch to it
+> branch dev
+<<<
+> checkout dev
+<<<
+
+# Dev branch: modify a.txt, add c.txt
++ a.txt a_modified.txt
++ c.txt c.txt
+> add a.txt
+<<<
+> add c.txt
+<<<
+> commit "dev: modify a, add c"
+<<<
+
+# --- Test successful branch checkout and file changes ---
+
+# Current state (on dev branch):
+= a.txt a_modified.txt
+E b.txt
+E c.txt
+
+# Case 1: Checkout back to master.
+> checkout master
+<<<
+
+# After checking out master:
+# a.txt should revert to its original version.
+= a.txt a.txt
+# b.txt should still exist.
+E b.txt
+# c.txt was only on dev branch, so it should be deleted.
+* c.txt
+
+# Case 2: Checkout back to dev.
+> checkout dev
+<<<
+
+# Files should be restored to the state of the dev branch.
+= a.txt a_modified.txt
+E b.txt
+E c.txt
+
+# --- Test critical failure case: untracked file would be overwritten ---
+
+# Go back to master
+> checkout master
+<<<
+
+# Create a new untracked file 'c.txt' in the working directory.
+# This file has the same name as a file that exists in the 'dev' branch.
++ c.txt c.txt
+
+# Case 3: Try to checkout dev. This MUST fail.
+# Checking out 'dev' would require overwriting the untracked 'c.txt'.
+> checkout dev
+There is an untracked file in the way; delete it, or add and commit it first.
+<<<
+
+# The working directory should be unchanged.
+E c.txt
+= a.txt a.txt
+
+# Let's add and commit the untracked file on master to resolve the conflict.
+> add c.txt
+<<<
+> commit "master: add c to resolve conflict"
+<<<
+# Now, checkout should succeed.
+> checkout dev
+<<<
+= a.txt a_modified.txt
+
+
+# --- Test other failure cases ---
+
+# Case 4: Checkout a nonexistent branch.
+> checkout nonexistent-branch
+No such branch exists.
+<<<
+
+# Case 5: Checkout the current branch (we are on dev).
+> checkout dev
+No need to checkout the current branch.
+<<<

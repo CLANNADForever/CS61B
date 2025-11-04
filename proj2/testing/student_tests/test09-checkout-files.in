@@ -1,0 +1,104 @@
+# Test for file-oriented checkout commands.
+
+I definitions.inc
+
+# --- Setup: Create a history with multiple versions of files ---
+> init
+<<<
+
+# Commit v1: a.txt and b.txt
++ a.txt a.txt
++ b.txt b.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> commit "v1: add a and b"
+<<<
+
+# Commit v2: modify a.txt, add c.txt
++ a.txt a_modified.txt
++ c.txt c.txt
+> add a.txt
+<<<
+> add c.txt
+<<<
+> commit "v2: modify a, add c"
+<<<
+
+# Now, capture the commit hashes using log
+> log
+===
+${COMMIT_HEAD}
+v2: modify a, add c
+
+===
+${COMMIT_HEAD}
+v1: add a and b
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+# Capture commit hashes. UID_V2 is the head, UID_V1 is the parent.
+D UID_V2 "${1}"
+D UID_V1 "${2}"
+
+# --- Test `checkout -- [file name]` ---
+
+# Sanity check: a.txt should be the modified version
+= a.txt a_modified.txt
+
+# Case 1: Restore a.txt from the current head commit (v2)
+> checkout -- a.txt
+<<<
+# Content should not change, as head version is the modified version.
+= a.txt a_modified.txt
+
+# Case 2: Modify b.txt, then restore it from head.
++ b.txt b_modified.txt
+= b.txt b_modified.txt
+> checkout -- b.txt
+<<<
+# b.txt should be restored to its v1 content, because that's what's in the v2 commit.
+= b.txt b.txt
+
+# Case 3: Failure - try to checkout a file that does not exist in the head commit.
+> checkout -- notwug.txt
+File does not exist in that commit.
+<<<
+
+# --- Test `checkout [commit id] -- [file name]` ---
+
+# Current state: a.txt is modified, b.txt is original.
+= a.txt a_modified.txt
+= b.txt b.txt
+
+# Case 4: Restore a.txt to its state from commit v1.
+> checkout ${UID_V1} -- a.txt
+<<<
+# a.txt should now have its original content.
+= a.txt a.txt
+
+# Case 5: Restore a.txt back to its state from commit v2.
+> checkout ${UID_V2} -- a.txt
+<<<
+# a.txt should be the modified version again.
+= a.txt a_modified.txt
+
+# Case 6: Failure - try to checkout a file that did not exist in a past commit.
+# c.txt did not exist in v1.
+> checkout ${UID_V1} -- c.txt
+File does not exist in that commit.
+<<<
+
+# Case 7: Failure - use a nonexistent commit id.
+> checkout 1234567 -- a.txt
+No commit with that id exists.
+<<<
+
+# Case 8: Failure - use a shortened but nonexistent commit id.
+> checkout abc -- a.txt
+No commit with that id exists.
+<<<

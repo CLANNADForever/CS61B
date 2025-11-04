@@ -2,14 +2,14 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
+
 import static gitlet.Utils.*;
 
 /** Represents a gitlet repository.
  *  does at a high level.
  *
- *  @author TODO
+ *  @author Wangjishi
  */
 public class Repository {
     /**
@@ -223,8 +223,36 @@ public class Repository {
 
     /** 打印当前文件和分支状态 */
     public static void printStatus() {
+        message("=== Branches ===");
+        for (String branchName : branches.keySet()) {
+            if (branchName.equals(currentBranch)) message("*" + branchName); // 标记当前分支
+            else message(branchName);
+        }
+        message("");
 
+        message("=== Staged Files ===");
+        for (String fileName : readMap(SNAPSHOT_DIR, "changed").keySet()) {
+            message(fileName); // TreeMap默认为字典序
+        }
+        message("");
+
+        message("=== Removed Files ===");
+        for (String fileName : readMap(SNAPSHOT_DIR, "removed").keySet()) {
+            message(fileName);
+        }
+        message("");
+
+        message("=== Modifications Not Staged For Commit ===");
+        TreeSet<String> unstagedFileNames = getUnstagedFile();
+        for (String fileName : unstagedFileNames) message(fileName);
+        message("");
+
+        message("=== Untracked Files ===");
+        TreeSet<String> untrackedFileNames = getUntrackedFile();
+        for (String fileName : untrackedFileNames) message(fileName);
+        message("");
     }
+
 
     /** 将指定文件从头提交中检出 */
     public static void checkoutFile(String fileName) {
@@ -257,7 +285,16 @@ public class Repository {
 
     /** 检出并切换到指定分支 */
     public static void checkoutBranch(String branchName) {
+        if (!branches.containsKey(branchName)) {
+            message("No such branch exists.");
+        }
+        if (branchName.equals(currentBranch)) {
+            message("No need to checkout the current branch.");
+        }
 
+        // 当前工作区存在未被跟踪且将被覆盖的文件
+        String commitHash = get(GITLET_DIR, "branches", branchName);
+        Commit c = readCommit(commitHash);
     }
 
     /** 创建一个指向头提交的新分支（不会切换分支） */
@@ -273,7 +310,61 @@ public class Repository {
     }
 
 
-    // 以下为私有方法，大部分由于需要反复使用而设立
+    // 以下为私有方法，大部分由于需要复用或调整结构而设立
+
+    // 仓库状态相关
+    private static TreeSet<String> getUnstagedFile() {
+        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
+        TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
+        TreeMap<String, String> removedFiles = readMap(SNAPSHOT_DIR, "removed");
+        TreeSet<String> unstagedFileNames = new TreeSet<>(); //
+
+        for (String fileName : currentCommitFiles.keySet()) {
+            // 当前提交跟踪，但工作目录删除，且删除操作未被暂存，属于“未暂存”
+            if (!join(CWD, fileName).exists() && !removedFiles.containsKey(fileName)) {
+                unstagedFileNames.add(fileName + " (deleted)");
+                continue;
+            }
+            // 当前提交跟踪，但工作目录修改，属于“未暂存”
+            String fileHash = sha1(readContentsAsString(join(CWD, fileName))); // FIXME
+            if (!fileHash.equals(currentCommitFiles.get(fileName))) { // 映射的值为跟踪文件的sha1
+                unstagedFileNames.add(fileName + " (modified)");
+                continue;
+            }
+        }
+        for (String fileName : changedFiles.keySet()) {
+            // 已暂存更改，但工作目录删除，属于“未暂存”
+            if (!join(CWD, fileName).exists()) {
+                unstagedFileNames.add(fileName + " (deleted)");
+                continue;
+            }
+            // 已暂存更改，但工作目录修改，属于“未暂存”
+            String fileHash = sha1(readContentsAsString(join(CWD, fileName)));
+            if (!fileHash.equals(changedFiles.get(fileName))) { // 映射的值为暂存文件的sha1
+                unstagedFileNames.add(fileName + " (modified)");
+                continue;
+            }
+        }
+        return unstagedFileNames;
+    }
+
+    private static TreeSet<String> getUntrackedFile() {
+        List<String> fileNamesInCWD = plainFilenamesIn(CWD);
+        assert fileNamesInCWD != null;
+        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
+        TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
+        TreeSet<String> untrackedFileNames = new TreeSet<>();
+
+        for (String fileName : fileNamesInCWD) {
+            if (join(CWD, fileName).isFile()) { // 不处理多级目录
+                // 工作目录中存在，但未被暂存也未被跟踪
+                if (!currentCommitFiles.containsKey(fileName) && !changedFiles.containsKey(fileName)) {
+                    untrackedFileNames.add(fileName);
+                }
+            }
+        }
+        return untrackedFileNames;
+    }
 
     // 提交（Commit）相关
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
@@ -331,6 +422,10 @@ public class Repository {
     private static boolean fileExistInDir(File dir, String fileName) {
         File f = join(dir, fileName);
         return f.exists();
+    }
+
+    private static boolean fileEquals(File f1, File f2) {
+        return readContentsAsString(f1).equals(readContentsAsString(f2));
     }
 
     // Map文件相关

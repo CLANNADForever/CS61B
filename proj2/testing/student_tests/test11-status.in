@@ -1,0 +1,140 @@
+# Comprehensive test for the status command, including extra credit sections.
+
+I definitions.inc
+
+# --- Setup ---
+> init
+<<<
++ a.txt a.txt
++ b.txt b.txt
++ c.txt c.txt
++ d.txt d.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> commit "v1: add a and b"
+<<<
+
+# --- Test 1: Clean state ---
+# After a commit, status should show no staged files and no modifications.
+# c.txt and d.txt are untracked. Branches should only be master.
+> status
+=== Branches ===
+*master
+
+=== Staged Files ===
+
+=== Removed Files ===
+
+=== Modifications Not Staged For Commit ===
+
+=== Untracked Files ===
+c.txt
+d.txt
+
+<<<
+
+# --- Test 2: Staged for Addition and Removal ---
+> add c.txt
+<<<
+> rm a.txt
+<<<
+
+# Status should now show 'c.txt' as staged and 'a.txt' as removed.
+# 'd.txt' is still untracked.
+> status
+=== Branches ===
+*master
+
+=== Staged Files ===
+c.txt
+
+=== Removed Files ===
+a.txt
+
+=== Modifications Not Staged For Commit ===
+
+=== Untracked Files ===
+d.txt
+
+<<<
+
+# --- Test 3: Modifications Not Staged ---
+
+# 1. A file tracked in the current commit is modified.
+# b.txt is tracked, let's modify it.
++ b.txt b_modified.txt
+
+# 2. A file staged for addition is then modified.
+# c.txt is staged, let's modify it again.
++ c.txt c_modified.txt
+
+# 3. A file tracked in the current commit is deleted from the working directory.
+# 'a.txt' was already removed by 'rm', let's test a new file for this.
+# First, let's commit our current changes to get a clean slate with more files.
+> commit "v2: stage c, rm a"
+<<<
+# Now, 'b.txt' and 'c.txt' are tracked. Let's delete 'c.txt' manually.
+- c.txt
+
+# Status should now reflect all these modifications.
+> status
+=== Branches ===
+*master
+
+=== Staged Files ===
+
+=== Removed Files ===
+
+=== Modifications Not Staged For Commit ===
+b.txt (modified)
+c.txt (deleted)
+
+=== Untracked Files ===
+d.txt
+
+<<<
+
+# --- Test 4: More complex scenarios ---
+
+# 1. Stage a modified file, then modify it again.
+# b.txt is currently modified. Let's add it.
+> add b.txt
+<<<
+# Now modify it AGAIN. It's now staged, but with different contents than the working dir.
++ b.txt a.txt
+# It should appear in BOTH staged (for its b_modified version) and modified (for its a.txt version).
+# This is a tricky case, and Git's behavior is nuanced.
+# Let's check a simpler case first:
+# 2. A file staged for addition is deleted.
+# Let's add 'd.txt' first.
+> add d.txt
+<<<
+# Now delete 'd.txt' from the working directory.
+- d.txt
+
+# 3. Create a new branch to test branch listing.
+> branch dev
+<<<
+
+# Final status check with a mix of everything.
+> status
+=== Branches ===
+*master
+dev
+
+=== Staged Files ===
+b.txt
+d.txt
+
+=== Removed Files ===
+
+=== Modifications Not Staged For Commit ===
+b.txt (modified)
+c.txt (deleted)
+d.txt (deleted)
+
+=== Untracked Files ===
+
+<<<
