@@ -1,0 +1,35 @@
+# Status with a removal followed by an add that restores former
+# contents.  Should simply "unremove" the file without staging.
+
+> init
+<<<
++ f.txt wug.txt
++ g.txt notwug.txt
+> add f.txt
+<<<
+> add g.txt
+<<<
+> commit "Two files"
+<<<
+
+# begin here
+> rm f.txt
+<<<
+* f.txt
++ f.txt wug.txt
+> add f.txt
+<<<
+
+> status
+=== Branches ===
+*master
+
+=== Staged Files ===
+
+=== Removed Files ===
+
+=== Modifications Not Staged For Commit ===
+
+=== Untracked Files ===
+
+<<<

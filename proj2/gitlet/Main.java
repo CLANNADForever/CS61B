@@ -102,6 +102,7 @@ public class Main {
                 Repository.reset(args[1]);
                 break;
             case "merge":
+                Repository.merge(args[1]);
                 break;
         }
     }

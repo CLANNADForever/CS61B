@@ -94,6 +94,11 @@ public class Repository {
                 join(STAGING_DIR, hash).delete(); // 从暂存区中移除
                 remove(SNAPSHOT_DIR, "changed", fileName); // 从map中移除
             }
+            // 如果文件暂存删除（存在于snapshot/removed），将其暂存删除的操作删除。
+            if (readMap(SNAPSHOT_DIR, "removed").containsKey(fileName)) {
+                remove(SNAPSHOT_DIR, "removed", fileName);
+                return;
+            }
             return;
         }
 
@@ -179,7 +184,9 @@ public class Repository {
         if (commitMap.containsKey(fileName)) {
             put(SNAPSHOT_DIR, "removed", fileName, null); // 删除区值置为null，当集合使用
             // 如果用户未删除，则删除文件
-            if (join(CWD, fileName).exists()) restrictedDelete(fileName);
+            if (join(CWD, fileName).exists()) {
+                restrictedDelete(fileName);
+            }
         }
     }
 
@@ -225,8 +232,11 @@ public class Repository {
     public static void printStatus() {
         message("=== Branches ===");
         for (String branchName : branches.keySet()) {
-            if (branchName.equals(currentBranch)) message("*" + branchName); // 标记当前分支
-            else message(branchName);
+            if (branchName.equals(currentBranch)) {
+                message("*" + branchName); // 标记当前分支
+            } else {
+                message(branchName);
+            }
         }
         message("");
 
@@ -244,12 +254,16 @@ public class Repository {
 
         message("=== Modifications Not Staged For Commit ===");
         TreeSet<String> unstagedFileNames = getUnstagedFile();
-        for (String fileName : unstagedFileNames) message(fileName);
+        for (String fileName : unstagedFileNames) {
+            message(fileName);
+        }
         message("");
 
         message("=== Untracked Files ===");
         TreeSet<String> untrackedFileNames = getUntrackedFile();
-        for (String fileName : untrackedFileNames) message(fileName);
+        for (String fileName : untrackedFileNames) {
+            message(fileName);
+        }
         message("");
     }
 
@@ -350,6 +364,8 @@ public class Repository {
         clearMap(SNAPSHOT_DIR, "removed");
     }
 
+    /** 将给定分支的文件合并至当前分支 */
+    public static void merge(String branchName) {}
 
     // 以下为私有方法，大部分由于需要复用或调整结构而设立
 

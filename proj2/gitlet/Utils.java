@@ -59,7 +59,7 @@ class Utils {
 
     /** Returns the SHA-1 hash of the concatenation of the strings in
      *  VALS. */
-static String sha1(List<Object> vals) {
+    static String sha1(List<Object> vals) {
         return sha1(vals.toArray(new Object[vals.size()]));
     }
 
