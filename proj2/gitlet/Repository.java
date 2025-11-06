@@ -12,11 +12,9 @@ import static gitlet.Utils.*;
  *  @author Wangjishi
  */
 public class Repository {
-    /**
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
-     */
+    /* List all instance variables of the Repository class here with a useful
+     *  comment above them describing what that variable represents and how that
+     *  variable is used. We've provided two examples for you. */
 
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
@@ -38,9 +36,12 @@ public class Repository {
     public static final File REMOVED = join(SNAPSHOT_DIR, "removed");
 
     /** headPointer,currentBranch,branches分别持久化头结点位置，当前分支名字，所有分支位置 */
-    public static String headPointer = GITLET_DIR.exists() ? readContentsAsString(join(GITLET_DIR, "headPointer")) : null;
-    public static String currentBranch = GITLET_DIR.exists() ? readContentsAsString(join(GITLET_DIR, "currentBranch")) : null;
-    public static TreeMap<String, String> branches = GITLET_DIR.exists() ? readObject(join(GITLET_DIR, "branches"), TreeMap.class) : null;
+    public static String headPointer = GITLET_DIR.exists() ?
+            readContentsAsString(join(GITLET_DIR, "headPointer")) : null;
+    public static String currentBranch = GITLET_DIR.exists() ?
+            readContentsAsString(join(GITLET_DIR, "currentBranch")) : null;
+    public static TreeMap<String, String> branches = GITLET_DIR.exists() ?
+            readObject(join(GITLET_DIR, "branches"), TreeMap.class) : null;
 
     /** init命令：在当前目录创建一个新的 Gitlet。*/
     public static void initGitlet() {
@@ -147,7 +148,8 @@ public class Repository {
         }
 
         // 将修改的文件从暂存区复制至文件区并删除自身，若已经存在，则不复制
-        for (String fileHash : changedMap.values()) { // 这里需要的是sha1作为名字去staging中寻址，并写入files文件夹，所以用values
+        // 这里需要的是sha1作为名字去staging中寻址，并写入files文件夹，所以用values
+        for (String fileHash : changedMap.values()) {
             File stagingFile = join(STAGING_DIR, fileHash);
             File newFile = join(FILE_DIR, fileHash);
             if (!newFile.exists()) {
@@ -315,7 +317,7 @@ public class Repository {
         // 检出给定分支所指提交
         checkoutCommit(commitHash);
         // 切换分支并清空暂存区
-        currentBranch = changedStringFile(GITLET_DIR, "currentBranch", branchName); // 实际上赋值无意义，只是含义更为直观
+        currentBranch = changedStringFile(GITLET_DIR, "currentBranch", branchName); // 赋值无意义，只是含义更为直观
         headPointer = changedStringFile(GITLET_DIR, "headPointer", commitHash);
         clearMap(SNAPSHOT_DIR, "changed");
         clearMap(SNAPSHOT_DIR, "removed");
@@ -365,7 +367,36 @@ public class Repository {
     }
 
     /** 将给定分支的文件合并至当前分支 */
-    public static void merge(String branchName) {}
+    public static void merge(String branchName) {
+        // 错误情况
+        if (!readMap(SNAPSHOT_DIR, "changed").isEmpty()
+                || !readMap(SNAPSHOT_DIR, "removed").isEmpty()) {
+            message("You have uncommitted changes.");
+            return;
+        }
+        if (!readMap(GITLET_DIR, "branches").containsKey(branchName)) {
+            message("A branch with that name does not exist.");
+            return;
+        }
+        if (branchName.equals(currentBranch)) {
+            message("Cannot merge a branch with itself.");
+            return;
+        }
+        String branchHeadCommitHash = branches.get(branchName);
+        Commit branchHeadCommit = readCommit(branchHeadCommitHash);
+        if (isUntrackedOverwritten(branchHeadCommitHash)) { // FIXME: branchHead还是分裂点？
+            message("There is an untracked file in the way; delete it, or add and commit it first.");
+            return;
+        }
+
+        // 1. 找到两分支的最新共同祖先（分裂点）
+        String splitPointHash = findSplitPoint(headPointer, branchHeadCommitHash);
+        assert splitPointHash != null; // 任意两提交一定有最新共同祖先
+        Commit splitPoint = readCommit(splitPointHash);
+
+        // 2. 判断分裂点提交是否为特殊情况
+
+    }
 
     // 以下为私有方法，大部分由于需要复用或调整结构而设立
 
@@ -398,6 +429,26 @@ public class Repository {
         return false;
     }
 
+    /** 获得未暂存文件列表 */
+    private static TreeSet<String> getUntrackedFile() {
+        List<String> fileNamesInCWD = plainFilenamesIn(CWD);
+        assert fileNamesInCWD != null;
+        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
+        TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
+        TreeSet<String> untrackedFileNames = new TreeSet<>();
+
+        for (String fileName : fileNamesInCWD) {
+            if (join(CWD, fileName).isFile()) { // 不处理多级目录
+                // 工作目录中存在，但未被暂存也未被跟踪
+                if (!currentCommitFiles.containsKey(fileName) && !changedFiles.containsKey(fileName)) {
+                    untrackedFileNames.add(fileName);
+                }
+            }
+        }
+        return untrackedFileNames;
+    }
+
+    /** 获取未暂存文件集合，主要用于优化代码结构，解耦逻辑 */
     private static TreeSet<String> getUnstagedFile() {
         TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
         TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
@@ -435,24 +486,43 @@ public class Repository {
         return unstagedFileNames;
     }
 
-    private static TreeSet<String> getUntrackedFile() {
-        List<String> fileNamesInCWD = plainFilenamesIn(CWD);
-        assert fileNamesInCWD != null;
-        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
-        TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
-        TreeSet<String> untrackedFileNames = new TreeSet<>();
-
-        for (String fileName : fileNamesInCWD) {
-            if (join(CWD, fileName).isFile()) { // 不处理多级目录
-                // 工作目录中存在，但未被暂存也未被跟踪
-                if (!currentCommitFiles.containsKey(fileName) && !changedFiles.containsKey(fileName)) {
-                    untrackedFileNames.add(fileName);
-                }
+    /**
+     * 寻找两个提交的最新共同祖先（分裂点），主要用于优化代码结构，解耦逻辑
+     * @return 分裂点sha1值
+     */
+    private static String findSplitPoint(String commitHash1, String commitHash2) {
+        // BFS, 先从当前分支（泛化为commit1，不影响结果）出发，存储所有当前分支可达点
+        Queue<String> q = new LinkedList<>();
+        Set<String> isVisited = new HashSet<>();
+        q.offer(commitHash1);
+        while (!q.isEmpty()) {
+            String commitHash = q.poll();
+            isVisited.add(commitHash);
+            Commit c = readCommit(commitHash);
+            if (c.parentHash1 != null) {
+                q.offer(c.parentHash1);
+            }
+            if (c.parentHash2 != null) {
+                q.offer(c.parentHash2);
             }
         }
-        return untrackedFileNames;
+        // 再从给定分支（泛化为commit2，不影响结果）出发，扫描至第一个可达点，即为最新共同祖先
+        q.offer(commitHash2);
+        while (!q.isEmpty()) {
+            String commitHash = q.poll();
+            if (isVisited.contains(commitHash)) {
+                return commitHash; // 扫描到第一个就直接返回，否则层数更深，不符合“最新”的定义
+            }
+            Commit c = readCommit(commitHash);
+            if (c.parentHash1 != null) {
+                q.offer(c.parentHash1);
+            }
+            if (c.parentHash2 != null) {
+                q.offer(c.parentHash2);
+            }
+        }
+        return null;
     }
-
 
 
     // 提交（Commit）相关
