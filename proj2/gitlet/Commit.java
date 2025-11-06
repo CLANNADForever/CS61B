@@ -13,37 +13,53 @@ import static gitlet.Utils.*;
  *  @author Wangjishi
  */
 public class Commit implements Serializable {
-    /**
-     * List all instance variables of the Commit class here with a useful
+    /* List all instance variables of the Commit class here with a useful
      * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
+     * variable is used. We've provided one example for `message`. */
 
     /** The message of this Commit. */
-    public String message;
+    private final String message;
 
     /** 时间戳 */
     private final long timeStamp;
 
     /** 父节点的“指针”，为了避免序列化时额外开销，存储其sha1哈希值。*/
-    public String parentHash1 = null;
-    public String parentHash2 = null;
+    private final String parentHash1;
+    private final String parentHash2;
 
     /** 指向文件内容的“指针”，同理使用sha1哈希值，为记录文件变化，需同时存储名字和sha1。*/
-    public TreeMap<String, String> files;
+    private final TreeMap<String, String> files;
 
-    public Commit(String message, String parentHash1, TreeMap<String, String> files) {
-        this.message = message;
+    // 一系列"getter"函数，用于维护私有字段不可变性和封装规范的同时，可在外部使用变量
+    public String getMessage() {
+        return message;
+    }
+
+    public String getParentHash1() {
+        return parentHash1;
+    }
+
+    public String getParentHash2() {
+        return parentHash2;
+    }
+
+    public TreeMap<String, String> getFiles() {
+        return files;
+    }
+
+    public Commit(String msg, String hash1, TreeMap<String, String> files) {
+        this.message = msg;
         timeStamp = new Date().getTime();
-        this.parentHash1 = parentHash1;
+        this.parentHash1 = hash1;
+        this.parentHash2 = null;
         this.files = files;
     }
 
-    public Commit(String message, String parentHash1, String parentHash2, TreeMap<String, String> files) {
-        this.message = message;
+    public Commit(String msg, String hash1, String hash2, TreeMap<String, String> files) {
+        this.message = msg;
         timeStamp = new Date().getTime();
-        this.parentHash1 = parentHash1;
-        this.parentHash2 = parentHash2;
+        this.parentHash1 = hash1;
+        this.parentHash2 = hash2;
         this.files = files;
     }
 
@@ -51,6 +67,8 @@ public class Commit implements Serializable {
     public Commit() {
         this.message = "initial commit";
         timeStamp = 0L;
+        this.parentHash1 = null;
+        this.parentHash2 = null;
         this.files = new TreeMap<>();
     }
 

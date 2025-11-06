@@ -36,12 +36,12 @@ public class Repository {
     public static final File REMOVED = join(SNAPSHOT_DIR, "removed");
 
     /** headPointer,currentBranch,branches分别持久化头结点位置，当前分支名字，所有分支位置 */
-    public static String headPointer = GITLET_DIR.exists() ?
-            readContentsAsString(join(GITLET_DIR, "headPointer")) : null;
-    public static String currentBranch = GITLET_DIR.exists() ?
-            readContentsAsString(join(GITLET_DIR, "currentBranch")) : null;
-    public static TreeMap<String, String> branches = GITLET_DIR.exists() ?
-            readObject(join(GITLET_DIR, "branches"), TreeMap.class) : null;
+    private static String headPointer = GITLET_DIR.exists()
+            ? readContentsAsString(join(GITLET_DIR, "headPointer")) : null;
+    private static String currentBranch = GITLET_DIR.exists()
+            ? readContentsAsString(join(GITLET_DIR, "currentBranch")) : null;
+    private static TreeMap<String, String> branches = GITLET_DIR.exists()
+            ? readObject(join(GITLET_DIR, "branches"), TreeMap.class) : null;
 
     /** init命令：在当前目录创建一个新的 Gitlet。*/
     public static void initGitlet() {
@@ -138,14 +138,17 @@ public class Repository {
         }
 
         // 根据changedMap和removedMap，修改提交的files
+        // 提交的属性在初始化后应不可变，所以应对map操作完成后，再用map初始化commit
         Commit parentCommit = readCommit(headPointer);
-        Commit c = new Commit(msg, headPointer, parentCommit.files);
-        for (String fileName : changedMap.keySet()) { // 此处fileName是"1.txt"，因而能修改" "1.txt": foobar "映射
-            c.files.put(fileName, changedMap.get(fileName));
+        TreeMap<String, String> filesInNewCommit = parentCommit.getFiles();
+
+        for (String fileName : changedMap.keySet()) { // fileName是"1.txt"，因而能修改"1.txt": "foobar"映射
+            filesInNewCommit.put(fileName, changedMap.get(fileName));
         }
         for (String fileName : removedMap.keySet()) { // 同理为fileName
-            c.files.remove(fileName);
+            filesInNewCommit.remove(fileName);
         }
+        Commit c = new Commit(msg, headPointer, filesInNewCommit);
 
         // 将修改的文件从暂存区复制至文件区并删除自身，若已经存在，则不复制
         // 这里需要的是sha1作为名字去staging中寻址，并写入files文件夹，所以用values
@@ -170,7 +173,7 @@ public class Repository {
     /** 取消暂存和跟踪一个文件，若文件未被用户删除，则将其删除 */
     public static void removeFile(String fileName) {
         TreeMap<String, String> changedMap = readMap(SNAPSHOT_DIR, "changed");
-        TreeMap<String, String> commitMap = readCommit(headPointer).files;
+        TreeMap<String, String> commitMap = readCommit(headPointer).getFiles();
         if (!changedMap.containsKey(fileName) && !commitMap.containsKey(fileName)) { // 既未被暂存，又未被跟踪
             message("No reason to remove the file.");
             return;
@@ -198,7 +201,7 @@ public class Repository {
         String commitHash = headPointer;
         while (c != null) {
             c.printLog(commitHash);
-            commitHash = c.parentHash1;
+            commitHash = c.getParentHash1();
             c = readCommit(commitHash);
         }
     }
@@ -220,7 +223,7 @@ public class Repository {
         int isFound = 0;
         for (String commitHash : commitHashes) {
             Commit c = readCommit(commitHash);
-            if (c.message.equals(msg)) {
+            if (c.getMessage().equals(msg)) {
                 isFound = 1;
                 message(commitHash);
             }
@@ -281,12 +284,12 @@ public class Repository {
             message("No commit with that id exists.");
             return;
         }
-        if (!c.files.containsKey(fileName)) { // 提交中不存在此文件
+        if (!c.getFiles().containsKey(fileName)) { // 提交中不存在此文件
             message("File does not exist in that commit.");
             return;
         }
 
-        File fileInCommit = join(FILE_DIR, c.files.get(fileName));
+        File fileInCommit = join(FILE_DIR, c.getFiles().get(fileName));
         File fileInCWD = join(CWD, fileName);
         if (!fileInCWD.exists()) {
             try {
@@ -311,13 +314,14 @@ public class Repository {
         // 当前工作区存在未被跟踪且将被覆盖的文件
         String commitHash = branches.get(branchName);
         if (isUntrackedOverwritten(commitHash)) {
-            message("There is an untracked file in the way; delete it, or add and commit it first.");
+            message("There is an untracked file in the way; " +
+                    "delete it, or add and commit it first.");
             return;
         }
         // 检出给定分支所指提交
         checkoutCommit(commitHash);
         // 切换分支并清空暂存区
-        currentBranch = changedStringFile(GITLET_DIR, "currentBranch", branchName); // 赋值无意义，只是含义更为直观
+        currentBranch = changedStringFile(GITLET_DIR, "currentBranch", branchName); // 赋值只是含义更为直观
         headPointer = changedStringFile(GITLET_DIR, "headPointer", commitHash);
         clearMap(SNAPSHOT_DIR, "changed");
         clearMap(SNAPSHOT_DIR, "removed");
@@ -354,7 +358,8 @@ public class Repository {
             return;
         }
         if (isUntrackedOverwritten(commitHash)) {
-            message("There is an untracked file in the way; delete it, or add and commit it first.");
+            message("There is an untracked file in the way; " +
+                    "delete it, or add and commit it first.");
             return;
         }
         // 检出指定提交
@@ -385,7 +390,8 @@ public class Repository {
         String branchHeadCommitHash = branches.get(branchName);
         Commit branchHeadCommit = readCommit(branchHeadCommitHash);
         if (isUntrackedOverwritten(branchHeadCommitHash)) { // FIXME: branchHead还是分裂点？
-            message("There is an untracked file in the way; delete it, or add and commit it first.");
+            message("There is an untracked file in the way; " +
+                    "delete it, or add and commit it first.");
             return;
         }
 
@@ -403,10 +409,10 @@ public class Repository {
     // 仓库状态相关，涉及较复杂的逻辑
     /** 对一个给定提交的检出 */
     private static void checkoutCommit(String commitHash) {
-        Set<String> commitFileNames = readCommit(commitHash).files.keySet();
+        Set<String> commitFileNames = readCommit(commitHash).getFiles().keySet();
         // 删除当前分支中存在，但给定分支没有的文件
         Commit cHead = readCommit(headPointer);
-        for (String fileName : cHead.files.keySet()) {
+        for (String fileName : cHead.getFiles().keySet()) {
             if (!commitFileNames.contains(fileName)) {
                 restrictedDelete(fileName);
             }
@@ -419,7 +425,7 @@ public class Repository {
 
     /** 检查对给定提交检出是否会覆盖未跟踪文件 */
     private static boolean isUntrackedOverwritten(String commitHash) {
-        Set<String> commitFileNames = readCommit(commitHash).files.keySet();
+        Set<String> commitFileNames = readCommit(commitHash).getFiles().keySet();
         TreeSet<String> untrackedFileNames = getUntrackedFile();
         for (String fileName : commitFileNames) {
             if (untrackedFileNames.contains(fileName)) { // 未被跟踪且将被检出覆盖
@@ -433,14 +439,15 @@ public class Repository {
     private static TreeSet<String> getUntrackedFile() {
         List<String> fileNamesInCWD = plainFilenamesIn(CWD);
         assert fileNamesInCWD != null;
-        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
+        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).getFiles();
         TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
         TreeSet<String> untrackedFileNames = new TreeSet<>();
 
         for (String fileName : fileNamesInCWD) {
             if (join(CWD, fileName).isFile()) { // 不处理多级目录
                 // 工作目录中存在，但未被暂存也未被跟踪
-                if (!currentCommitFiles.containsKey(fileName) && !changedFiles.containsKey(fileName)) {
+                if (!currentCommitFiles.containsKey(fileName) &&
+                        !changedFiles.containsKey(fileName)) {
                     untrackedFileNames.add(fileName);
                 }
             }
@@ -450,7 +457,7 @@ public class Repository {
 
     /** 获取未暂存文件集合，主要用于优化代码结构，解耦逻辑 */
     private static TreeSet<String> getUnstagedFile() {
-        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).files;
+        TreeMap<String, String> currentCommitFiles = readCommit(headPointer).getFiles();
         TreeMap<String, String> changedFiles = readMap(SNAPSHOT_DIR, "changed");
         TreeMap<String, String> removedFiles = readMap(SNAPSHOT_DIR, "removed");
         TreeSet<String> unstagedFileNames = new TreeSet<>();
@@ -499,11 +506,11 @@ public class Repository {
             String commitHash = q.poll();
             isVisited.add(commitHash);
             Commit c = readCommit(commitHash);
-            if (c.parentHash1 != null) {
-                q.offer(c.parentHash1);
+            if (c.getParentHash1() != null) {
+                q.offer(c.getParentHash1());
             }
-            if (c.parentHash2 != null) {
-                q.offer(c.parentHash2);
+            if (c.getParentHash2() != null) {
+                q.offer(c.getParentHash2());
             }
         }
         // 再从给定分支（泛化为commit2，不影响结果）出发，扫描至第一个可达点，即为最新共同祖先
@@ -514,11 +521,11 @@ public class Repository {
                 return commitHash; // 扫描到第一个就直接返回，否则层数更深，不符合“最新”的定义
             }
             Commit c = readCommit(commitHash);
-            if (c.parentHash1 != null) {
-                q.offer(c.parentHash1);
+            if (c.getParentHash1() != null) {
+                q.offer(c.getParentHash1());
             }
-            if (c.parentHash2 != null) {
-                q.offer(c.parentHash2);
+            if (c.getParentHash2() != null) {
+                q.offer(c.getParentHash2());
             }
         }
         return null;
