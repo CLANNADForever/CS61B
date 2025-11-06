@@ -314,8 +314,8 @@ public class Repository {
         // 当前工作区存在未被跟踪且将被覆盖的文件
         String commitHash = branches.get(branchName);
         if (isUntrackedOverwritten(commitHash)) {
-            message("There is an untracked file in the way; " +
-                    "delete it, or add and commit it first.");
+            message("There is an untracked file in the way; "
+                    + "delete it, or add and commit it first.");
             return;
         }
         // 检出给定分支所指提交
@@ -358,8 +358,8 @@ public class Repository {
             return;
         }
         if (isUntrackedOverwritten(commitHash)) {
-            message("There is an untracked file in the way; " +
-                    "delete it, or add and commit it first.");
+            message("There is an untracked file in the way; "
+                    + "delete it, or add and commit it first.");
             return;
         }
         // 检出指定提交
@@ -390,8 +390,8 @@ public class Repository {
         String branchHeadCommitHash = branches.get(branchName);
         Commit branchHeadCommit = readCommit(branchHeadCommitHash);
         if (isUntrackedOverwritten(branchHeadCommitHash)) { // FIXME: branchHead还是分裂点？
-            message("There is an untracked file in the way; " +
-                    "delete it, or add and commit it first.");
+            message("There is an untracked file in the way; "
+                    + "delete it, or add and commit it first.");
             return;
         }
 
@@ -446,8 +446,8 @@ public class Repository {
         for (String fileName : fileNamesInCWD) {
             if (join(CWD, fileName).isFile()) { // 不处理多级目录
                 // 工作目录中存在，但未被暂存也未被跟踪
-                if (!currentCommitFiles.containsKey(fileName) &&
-                        !changedFiles.containsKey(fileName)) {
+                if (!currentCommitFiles.containsKey(fileName)
+                        && !changedFiles.containsKey(fileName)) {
                     untrackedFileNames.add(fileName);
                 }
             }

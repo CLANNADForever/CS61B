@@ -73,7 +73,7 @@ public class Commit implements Serializable {
     }
 
     /** 按照指定格式输出日志。仅包含本提交的信息 */
-    public void printLog(String commitHash) { // TODO: merge
+    public void printLog(String commitHash) { // FIXME: merge
         Date date = new Date(timeStamp);
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         message("===");
