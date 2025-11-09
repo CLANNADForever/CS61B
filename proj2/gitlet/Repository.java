@@ -111,7 +111,7 @@ public class Repository {
 
         // 如果文件已经在暂存区，覆盖先前的版本
         if (readMap(SNAPSHOT_DIR, "changed").containsKey(fileName)) {
-            removeFile(STAGING_DIR, get(SNAPSHOT_DIR, "changed", fileName));
+            removeFileInDir(STAGING_DIR, get(SNAPSHOT_DIR, "changed", fileName));
         }
 
         // 将文件添加到暂存区
@@ -181,7 +181,7 @@ public class Repository {
 
         // 如果该文件的修改操作被暂存，取消暂存
         if (changedMap.containsKey(fileName)) {
-            removeFile(STAGING_DIR, changedMap.get(fileName)); // 暂存区被删除的文件文件名应为sha1，由changedMap跟踪
+            removeFileInDir(STAGING_DIR, changedMap.get(fileName)); // 暂存区被删除的文件文件名应为sha1，由changedMap跟踪
             remove(SNAPSHOT_DIR, "changed", fileName); // remove内部会改变原本的文件
         }
 
@@ -389,6 +389,7 @@ public class Repository {
         }
         String branchHeadCommitHash = branches.get(branchName);
         Commit branchHeadCommit = readCommit(branchHeadCommitHash);
+        Commit headCommit = readCommit(headPointer);
         if (isUntrackedOverwritten(branchHeadCommitHash)) { // FIXME: branchHead还是分裂点？
             message("There is an untracked file in the way; "
                     + "delete it, or add and commit it first.");
@@ -398,10 +399,49 @@ public class Repository {
         // 1. 找到两分支的最新共同祖先（分裂点）
         String splitPointHash = findSplitPoint(headPointer, branchHeadCommitHash);
         assert splitPointHash != null; // 任意两提交一定有最新共同祖先
-        Commit splitPoint = readCommit(splitPointHash);
+        Commit splitPointCommit = readCommit(splitPointHash);
+        TreeMap<String, String> currentFiles = headCommit.getFiles();
+        TreeMap<String, String> branchFiles = branchHeadCommit.getFiles();
+        TreeMap<String, String> splitFiles = splitPointCommit.getFiles();
 
         // 2. 判断分裂点提交是否为特殊情况
+        if (splitPointHash.equals(branchHeadCommitHash)) { // 分裂点为给定分支
+            message("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        if (splitPointHash.equals(headPointer)) { // 分裂点为当前分支
+            checkoutBranch(branchName);
+            message("Current branch fast-forwarded.");
+        }
 
+        // 3. 处理无冲突的文件
+        Set<String> allFiles = new HashSet<>();
+        allFiles.addAll(currentFiles.keySet());
+        allFiles.addAll(branchFiles.keySet());
+        for (String fileName : allFiles) { // 遍历所有可能存在的文件
+            int curToSplit = isSameFile(currentFiles, splitFiles, fileName);
+            int branchToSplit = isSameFile(branchFiles, splitFiles, fileName);
+            int curToBranch = isSameFile(currentFiles, branchFiles, fileName);
+            if (curToSplit == 1) { // 当前分支相比分岔点未修改
+                if (branchToSplit == 0) { // 给定分支相比分叉点已修改
+                    checkoutFileInCommit(branchHeadCommitHash, fileName); // 检出分支的文件并暂存
+                    put(SNAPSHOT_DIR, "changed", fileName, branchFiles.get(fileName));
+                } else if (branchToSplit == -1) { // 给定分支此文件被删除
+                    removeFile(fileName); // 取消暂存该文件
+                }
+            }
+            if (branchToSplit == -2 && curToSplit == -3) { // 文件在分支中新增，在当前分支和分岔点不存在
+                checkoutFileInCommit(branchHeadCommitHash, fileName); // 检出分支文件并暂存
+                put(SNAPSHOT_DIR, "changed", fileName, branchFiles.get(fileName));
+            }
+            // 以下为冲突情况
+            if (curToSplit == 0 && branchToSplit == 0 && curToBranch == 0 // 相比分岔点，均修改但修改内容不同
+                    || curToSplit == -1 && branchToSplit == 0 // 当前分支删除，另一分支修改
+                    || curToSplit == 0 && branchToSplit == -1 // 当前分支修改，另一分支删除
+                    || curToSplit == -2 && branchToSplit == -2 && curToBranch == 1) { // 均新建，内容不同
+                handleConflict(fileName, currentFiles.get(fileName), branchFiles.get(fileName)); // 修改并暂存文件
+            }
+        }
     }
 
     // 以下为私有方法，大部分由于需要复用或调整结构而设立
@@ -531,6 +571,48 @@ public class Repository {
         return null;
     }
 
+    /** 处理冲突文件，包括得到文件内容，(创建并)写入文件，并将其暂存
+     * @param fileName 文件名
+     * @param fileHash1 头提交（当前分支）文件内容
+     * @param fileHash2 合并分支文件内容
+     */
+    private static void handleConflict(String fileName, String fileHash1, String fileHash2) {
+        String newFileString = mergeConflictFile(fileHash1, fileHash2);
+        File f = join(CWD, fileName);
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        writeContents(f, newFileString); // 修改当前工作目录的文件内容
+        addFile(fileName); // 将其暂存
+    }
+
+    /** 返回一个合并的冲突文件内容 */
+    private static String mergeConflictFile(String fileHash1, String fileHash2) {
+        String fileString1;
+        String fileString2;
+        if (fileHash1 == null) {
+            fileString1 = "\n"; // 留下文件尾换行
+        } else {
+            fileString1 = readContentsAsString(join(FILE_DIR, fileHash1));
+        }
+        if (fileHash2 == null) {
+            fileString2 = "\n";
+        } else {
+            fileString2 = readContentsAsString(join(FILE_DIR, fileHash2));
+        }
+
+        StringBuilder newFileString = new StringBuilder();
+        newFileString.append("<<<<<<< HEAD");
+        newFileString.append(fileString1);
+        newFileString.append("=======");
+        newFileString.append(fileString2);
+        newFileString.append(">>>>>>>");
+        return newFileString.toString();
+    }
 
     // 提交（Commit）相关
     /** 向提交文件夹写入一个提交，写入时文件名为sha1序列，内容为提交序列化后的结果 */
@@ -573,7 +655,7 @@ public class Repository {
     }
 
     /** 删除指定文件夹中的指定文件 */
-    private static void removeFile(File dir, String fileName) {
+    private static void removeFileInDir(File dir, String fileName) {
         File f = join(dir, fileName);
         f.delete();
     }
@@ -585,16 +667,16 @@ public class Repository {
         return f.exists();
     }
 
-    private static boolean fileExistInDir(File dir, String fileName) {
-        File f = join(dir, fileName);
-        return f.exists();
-    }
+//    private static boolean fileExistInDir(File dir, String fileName) {
+//        File f = join(dir, fileName);
+//        return f.exists();
+//    }
+//
+//    private static boolean fileEquals(File f1, File f2) {
+//        return readContentsAsString(f1).equals(readContentsAsString(f2));
+//    }
 
-    private static boolean fileEquals(File f1, File f2) {
-        return readContentsAsString(f1).equals(readContentsAsString(f2));
-    }
-
-    // Map文件相关
+    // Map(文件)相关
     /** 从指定文件中读取并返回map */
     private static TreeMap<String, String> readMap(File dir, String fileName) {
         File f = join(dir, fileName);
@@ -632,6 +714,23 @@ public class Repository {
         writeObject(f, new TreeMap<>());
     }
 
+    /** 比较一个键在两个map中的值是否相等 *
+     * @return 根据不同结果返回不同的整数。1代表相等，0代表不相等，-1代表map1中不存在，-2代表map2中不存在，-3代表都不存在
+     */
+    private static int isSameFile(TreeMap<String, String> map1, TreeMap<String, String> map2, String key) {
+        if (!map1.containsKey(key) && !map2.containsKey(key)) {
+            return -3;
+        } else if (!map1.containsKey(key)) {
+            return -1;
+        } else if (!map2.containsKey(key)) {
+            return -2;
+        } else if (map1.get(key).equals(map2.get(key))) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
     // 字符串文件相关
     /** 改变字符串文件的值，并返回该值 */
     private static String changedStringFile(File dir, String fileName, String newValue) {
@@ -640,9 +739,9 @@ public class Repository {
         return newValue;
     }
 
-    /** 读取并返回字符串文件的值 */
-    private static String readStringFile(File dir, String fileName) {
-        File f = join(dir, fileName);
-        return readContentsAsString(f);
-    }
+//    /** 读取并返回字符串文件的值 */
+//    private static String readStringFile(File dir, String fileName) {
+//        File f = join(dir, fileName);
+//        return readContentsAsString(f);
+//    }
 }
