@@ -123,51 +123,7 @@ public class Repository {
 
     /** 传入提交信息，进行一次提交 */
     public static void commitWithMessage(String msg) {
-        // 信息为空，应报错
-        if (msg == null || msg.trim().isEmpty()) {
-            System.out.println("Please enter a commit message.");
-            return;
-        }
-
-        TreeMap<String, String> changedMap = readMap(SNAPSHOT_DIR, "changed");
-        TreeMap<String, String> removedMap = readMap(SNAPSHOT_DIR, "removed");
-        // 无任何修改和删除，应报错
-        if (changedMap.isEmpty() && removedMap.isEmpty()) {
-            message("No changes added to the commit.");
-            return;
-        }
-
-        // 根据changedMap和removedMap，修改提交的files
-        // 提交的属性在初始化后应不可变，所以应对map操作完成后，再用map初始化commit
-        Commit parentCommit = readCommit(headPointer);
-        TreeMap<String, String> filesInNewCommit = parentCommit.getFiles();
-
-        for (String fileName : changedMap.keySet()) { // fileName是"1.txt"，因而能修改"1.txt": "foobar"映射
-            filesInNewCommit.put(fileName, changedMap.get(fileName));
-        }
-        for (String fileName : removedMap.keySet()) { // 同理为fileName
-            filesInNewCommit.remove(fileName);
-        }
-        Commit c = new Commit(msg, headPointer, filesInNewCommit);
-
-        // 将修改的文件从暂存区复制至文件区并删除自身，若已经存在，则不复制
-        // 这里需要的是sha1作为名字去staging中寻址，并写入files文件夹，所以用values
-        for (String fileHash : changedMap.values()) {
-            File stagingFile = join(STAGING_DIR, fileHash);
-            File newFile = join(FILE_DIR, fileHash);
-            if (!newFile.exists()) {
-                writeFile(FILE_DIR, stagingFile);
-            }
-            // 删除暂存区的文件
-            stagingFile.delete();
-        }
-
-        // 更新状态
-        writeCommit(c);
-        headPointer = changedStringFile(GITLET_DIR, "headPointer", sha1(c.toString())); // 更新头指针sha1
-        put(GITLET_DIR, "branches", currentBranch, headPointer); // 将当前分支向前推进
-        clearMap(SNAPSHOT_DIR, "changed");
-        clearMap(SNAPSHOT_DIR, "removed");
+        commitWithMessage(msg, null); // 此处为了照顾merge提交逻辑，重构了代码结构
     }
 
     /** 取消暂存和跟踪一个文件，若文件未被用户删除，则将其删除 */
@@ -412,12 +368,14 @@ public class Repository {
         if (splitPointHash.equals(headPointer)) { // 分裂点为当前分支
             checkoutBranch(branchName);
             message("Current branch fast-forwarded.");
+            return;
         }
 
         // 3. 处理无冲突的文件
         Set<String> allFiles = new HashSet<>();
         allFiles.addAll(currentFiles.keySet());
         allFiles.addAll(branchFiles.keySet());
+        int conflictFlag = 0;
         for (String fileName : allFiles) { // 遍历所有可能存在的文件
             int curToSplit = isSameFile(currentFiles, splitFiles, fileName);
             int branchToSplit = isSameFile(branchFiles, splitFiles, fileName);
@@ -434,19 +392,83 @@ public class Repository {
                 checkoutFileInCommit(branchHeadCommitHash, fileName); // 检出分支文件并暂存
                 put(SNAPSHOT_DIR, "changed", fileName, branchFiles.get(fileName));
             }
-            // 以下为冲突情况
+            // 4. 处理冲突文件
             if (curToSplit == 0 && branchToSplit == 0 && curToBranch == 0 // 相比分岔点，均修改但修改内容不同
                     || curToSplit == -1 && branchToSplit == 0 // 当前分支删除，另一分支修改
                     || curToSplit == 0 && branchToSplit == -1 // 当前分支修改，另一分支删除
                     || curToSplit == -2 && branchToSplit == -2 && curToBranch == 1) { // 均新建，内容不同
+                conflictFlag = 1;
                 handleConflict(fileName, currentFiles.get(fileName), branchFiles.get(fileName)); // 修改并暂存文件
             }
+        }
+
+        // 5. 完成提交
+        String mergeMessage = "Merged " + branchName + " into " + currentBranch + ".";
+        commitWithMessage(mergeMessage, branchHeadCommitHash); // 传入hash2
+        message(mergeMessage);
+        if (conflictFlag == 1) {
+            message("Encountered a merge conflict.");
         }
     }
 
     // 以下为私有方法，大部分由于需要复用或调整结构而设立
 
     // 仓库状态相关，涉及较复杂的逻辑
+    /** 进行一次提交 */
+    public static void commitWithMessage(String msg, String parentHash2) {
+        // 信息为空，应报错
+        if (msg == null || msg.trim().isEmpty()) {
+            System.out.println("Please enter a commit message.");
+            return;
+        }
+
+        TreeMap<String, String> changedMap = readMap(SNAPSHOT_DIR, "changed");
+        TreeMap<String, String> removedMap = readMap(SNAPSHOT_DIR, "removed");
+        // 无任何修改和删除，应报错
+        if (changedMap.isEmpty() && removedMap.isEmpty()) {
+            message("No changes added to the commit.");
+            return;
+        }
+
+        // 根据changedMap和removedMap，修改提交的files
+        // 提交的属性在初始化后应不可变，所以应对map操作完成后，再用map初始化commit
+        Commit parentCommit = readCommit(headPointer);
+        TreeMap<String, String> filesInNewCommit = parentCommit.getFiles();
+
+        for (String fileName : changedMap.keySet()) { // fileName是"1.txt"，因而能修改"1.txt": "foobar"映射
+            filesInNewCommit.put(fileName, changedMap.get(fileName));
+        }
+        for (String fileName : removedMap.keySet()) { // 同理为fileName
+            filesInNewCommit.remove(fileName);
+        }
+        Commit c;
+        if (parentHash2 == null) {
+            c = new Commit(msg, headPointer, filesInNewCommit);
+        } else { // merge提交，有第二个父提交
+            c = new Commit(msg, headPointer, parentHash2, filesInNewCommit);
+        }
+
+
+        // 将修改的文件从暂存区复制至文件区并删除自身，若已经存在，则不复制
+        // 这里需要的是sha1作为名字去staging中寻址，并写入files文件夹，所以用values
+        for (String fileHash : changedMap.values()) {
+            File stagingFile = join(STAGING_DIR, fileHash);
+            File newFile = join(FILE_DIR, fileHash);
+            if (!newFile.exists()) {
+                writeFile(FILE_DIR, stagingFile);
+            }
+            // 删除暂存区的文件
+            stagingFile.delete();
+        }
+
+        // 更新状态
+        writeCommit(c);
+        headPointer = changedStringFile(GITLET_DIR, "headPointer", sha1(c.toString())); // 更新头指针sha1
+        put(GITLET_DIR, "branches", currentBranch, headPointer); // 将当前分支向前推进
+        clearMap(SNAPSHOT_DIR, "changed");
+        clearMap(SNAPSHOT_DIR, "removed");
+    }
+
     /** 对一个给定提交的检出 */
     private static void checkoutCommit(String commitHash) {
         Set<String> commitFileNames = readCommit(commitHash).getFiles().keySet();
@@ -595,22 +617,22 @@ public class Repository {
         String fileString1;
         String fileString2;
         if (fileHash1 == null) {
-            fileString1 = "\n"; // 留下文件尾换行
+            fileString1 = "";
         } else {
             fileString1 = readContentsAsString(join(FILE_DIR, fileHash1));
         }
         if (fileHash2 == null) {
-            fileString2 = "\n";
+            fileString2 = "";
         } else {
             fileString2 = readContentsAsString(join(FILE_DIR, fileHash2));
         }
 
         StringBuilder newFileString = new StringBuilder();
-        newFileString.append("<<<<<<< HEAD");
+        newFileString.append("<<<<<<< HEAD\n");
         newFileString.append(fileString1);
-        newFileString.append("=======");
+        newFileString.append("=======\n");
         newFileString.append(fileString2);
-        newFileString.append(">>>>>>>");
+        newFileString.append(">>>>>>>\n");
         return newFileString.toString();
     }
 

@@ -1,0 +1,62 @@
+# Test for merge conflicts.
+
+I definitions.inc
+
+# --- Setup: Create history with conflicting changes ---
+> init
+<<<
+# Split Point: conflict.txt(v1)
++ conflict.txt a.txt
+> add conflict.txt
+<<<
+> commit "split point"
+<<<
+> branch other
+<<<
+
+# Master branch changes: modify conflict.txt
++ conflict.txt b.txt
+> add conflict.txt
+<<<
+> commit "master changes"
+<<<
+
+# Other branch changes: modify conflict.txt in a different way
+> checkout other
+<<<
++ conflict.txt c.txt
+> add conflict.txt
+<<<
+> commit "other changes"
+<<<
+
+# --- Perform the merge and check for conflict ---
+> checkout master
+<<<
+> merge other
+Merged other into master.
+Encountered a merge conflict.
+<<<
+
+# --- Verify the conflicted file content ---
+# The file should contain content from both branches, formatted correctly.
++ expected_conflict.txt expected_conflict.txt
+# Create the expected conflict content file
+# NOTE: You need to manually create a file `expected_conflict.txt` in your `src`
+#       directory with the exact content below (without the comment lines):
+# <<<<<<< HEAD
+# b
+# =======
+# c
+# >>>>>>>
+= conflict.txt expected_conflict.txt
+
+# --- Verify the merge commit was still created ---
+> log
+===
+${COMMIT_HEAD}
+Merged other into master.
+
+${ARBLINES}
+<<<*
+

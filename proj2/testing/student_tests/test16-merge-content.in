@@ -1,0 +1,82 @@
+# Test for content-based merge rules without conflicts.
+
+I definitions.inc
+
+# --- Setup: Create a divergent history with various file modifications ---
+> init
+<<<
+# Split Point: a.txt(v1), b.txt(v1), c.txt(v1), d.txt(v1)
++ a.txt a.txt
++ b.txt b.txt
++ c.txt c.txt
++ d.txt d.txt
+> add a.txt
+<<<
+> add b.txt
+<<<
+> add c.txt
+<<<
+> add d.txt
+<<<
+> commit "split point"
+<<<
+> branch other
+<<<
+
+# Master branch changes:
+# a.txt: modified (master -> v2)
+# b.txt: unchanged
+# c.txt: modified (master -> v_common)
+# d.txt: removed
++ a.txt a_modified.txt
++ c.txt c_modified.txt
+> add a.txt
+<<<
+> add c.txt
+<<<
+> rm d.txt
+<<<
+> commit "master changes"
+<<<
+
+# Other branch changes:
+> checkout other
+<<<
+# a.txt: unchanged
+# b.txt: modified (other -> v2)
+# c.txt: modified (other -> v_common, same as master)
+# d.txt: unchanged
++ b.txt b_modified.txt
++ c.txt c_modified.txt
+> add b.txt
+<<<
+> add c.txt
+<<<
+> commit "other changes"
+<<<
+
+# --- Perform the merge ---
+> checkout master
+<<<
+> merge other
+Merged other into master.
+<<<
+
+# --- Verify the results based on merge rules ---
+# 1. a.txt: modified in master, not in other -> should be master's version (a_modified.txt)
+= a.txt a_modified.txt
+# 2. b.txt: modified in other, not in master -> should be other's version (b_modified.txt)
+= b.txt b_modified.txt
+# 3. c.txt: modified in both in the same way -> should be the common modified version (c_modified.txt)
+= c.txt c_modified.txt
+# 4. d.txt: removed in master, not in other -> should remain removed.
+* d.txt
+
+# 5. Check for the merge commit in the log.
+> log
+===
+${COMMIT_HEAD}
+Merged other into master.
+
+${ARBLINES}
+<<<*

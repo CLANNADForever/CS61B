@@ -1,0 +1,46 @@
+# Test for merge conflicts.
+
+I definitions.inc
+
+# --- Setup: Conflict with deletion ---
+> init
+<<<
++ del_conflict.txt a.txt
+> add del_conflict.txt
+<<<
+> commit "split point 2"
+<<<
+> branch other2
+<<<
+
+# Master: modify the file
++ del_conflict.txt b.txt
+> add del_conflict.txt
+<<<
+> commit "master changes 2"
+<<<
+
+# Other: delete the file
+> checkout other2
+<<<
+> rm del_conflict.txt
+<<<
+> commit "other changes 2"
+<<<
+
+# --- Perform the merge and check for conflict ---
+> checkout master
+<<<
+> merge other2
+Merged other2 into master.
+Encountered a merge conflict.
+<<<
+# --- Verify the conflicted file content (deleted file is treated as empty) ---
++ expected_del_conflict.txt expected_del_conflict.txt
+# NOTE: You need to manually create `expected_del_conflict.txt` in `src`
+#       with the exact content below:
+# <<<<<<< HEAD
+# b
+# =======
+# >>>>>>>
+= del_conflict.txt expected_del_conflict.txt

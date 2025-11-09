@@ -1,0 +1,53 @@
+# Test for special merge cases, including fast-forward.
+
+I definitions.inc
+
+# --- Setup: Create a history for fast-forward ---
+> init
+<<<
++ a.txt a.txt
+> add a.txt
+<<<
+> commit "v1"
+<<<
+> branch dev
+<<<
+# go to the new branch
+> checkout dev
+<<<
++ b.txt b.txt
+> add b.txt
+<<<
+> commit "v2"
+<<<
+
+# Case 1: Fast-forward merge. master is an ancestor of dev.
+# Current branch is master.
+> checkout master
+<<<
+> merge dev
+Current branch fast-forwarded.
+<<<
+# After merge, master should be at the same commit as dev.
+# b.txt should now exist on master.
+E b.txt
+= b.txt b.txt
+> log
+===
+${COMMIT_HEAD}
+v2
+
+===
+${COMMIT_HEAD}
+v1
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+
+# delete all files(include .gitlet dir)
+- .gitlet
+- a.txt
+- b.txt

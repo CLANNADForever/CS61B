@@ -1,0 +1,47 @@
+# Test for simple merge cases.
+
+I definitions.inc
+
+# --- Setup: Create a divergent history for a true merge ---
+> init
+<<<
++ common.txt a.txt
+> add common.txt
+<<<
+> commit "base"
+<<<
+> branch other
+<<<
+# Master branch changes
++ master_file.txt b.txt
+> add master_file.txt
+<<<
+> commit "master changes"
+<<<
+# Other branch changes
+> checkout other
+<<<
++ other_file.txt c.txt
+> add other_file.txt
+<<<
+> commit "other changes"
+<<<
+
+# Case 2: Simple merge with no conflicts.
+> checkout master
+<<<
+> merge other
+Merged other into master.
+<<<
+# Check for the automatic merge commit message.
+> log
+===
+${COMMIT_HEAD}
+Merged other into master.
+
+${ARBLINES}
+<<<*
+# After merge, master should have files from both branches.
+E master_file.txt
+E other_file.txt
+E common.txt
