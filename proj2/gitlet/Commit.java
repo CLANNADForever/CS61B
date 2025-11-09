@@ -81,7 +81,7 @@ public class Commit implements Serializable {
 
         // 如果为合并提交，打印提交信息
         if (parentHash2 != null) {
-            message("Merge: " + parentHash1.substring(0, 7) + " " +parentHash2.substring(0, 7));
+            message("Merge: " + parentHash1.substring(0, 7) + " " + parentHash2.substring(0, 7));
         }
 
         message("Date: " + formatter.format(date));

@@ -137,7 +137,7 @@ public class Repository {
 
         // 如果该文件的修改操作被暂存，取消暂存
         if (changedMap.containsKey(fileName)) {
-            removeFileInDir(STAGING_DIR, changedMap.get(fileName)); // 暂存区被删除的文件文件名应为sha1，由changedMap跟踪
+            removeFileInDir(STAGING_DIR, changedMap.get(fileName)); // 暂存区文件名应为sha1，由changedMap跟踪
             remove(SNAPSHOT_DIR, "changed", fileName); // remove内部会改变原本的文件
         }
 
@@ -334,24 +334,21 @@ public class Repository {
                 || !readMap(SNAPSHOT_DIR, "removed").isEmpty()) {
             message("You have uncommitted changes.");
             return;
-        }
-        if (!readMap(GITLET_DIR, "branches").containsKey(branchName)) {
+        } else if (!readMap(GITLET_DIR, "branches").containsKey(branchName)) {
             message("A branch with that name does not exist.");
             return;
-        }
-        if (branchName.equals(currentBranch)) {
+        } else if (branchName.equals(currentBranch)) {
             message("Cannot merge a branch with itself.");
             return;
         }
         String branchHeadCommitHash = branches.get(branchName);
         Commit branchHeadCommit = readCommit(branchHeadCommitHash);
         Commit headCommit = readCommit(headPointer);
-        if (isUntrackedOverwritten(branchHeadCommitHash)) { // FIXME: branchHead还是分裂点？
+        if (isUntrackedOverwritten(branchHeadCommitHash)) {
             message("There is an untracked file in the way; "
                     + "delete it, or add and commit it first.");
             return;
         }
-
         // 1. 找到两分支的最新共同祖先（分裂点）
         String splitPointHash = findSplitPoint(headPointer, branchHeadCommitHash);
         assert splitPointHash != null; // 任意两提交一定有最新共同祖先
@@ -405,7 +402,6 @@ public class Repository {
         // 5. 完成提交
         String mergeMessage = "Merged " + branchName + " into " + currentBranch + ".";
         commitWithMessage(mergeMessage, branchHeadCommitHash); // 传入hash2
-//        message(mergeMessage);
         if (conflictFlag == 1) {
             message("Encountered a merge conflict.");
         }
