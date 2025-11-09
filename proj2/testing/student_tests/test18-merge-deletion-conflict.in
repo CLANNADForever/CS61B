@@ -32,7 +32,6 @@ I definitions.inc
 > checkout master
 <<<
 > merge other2
-Merged other2 into master.
 Encountered a merge conflict.
 <<<
 # --- Verify the conflicted file content (deleted file is treated as empty) ---

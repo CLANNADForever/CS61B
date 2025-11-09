@@ -405,7 +405,7 @@ public class Repository {
         // 5. 完成提交
         String mergeMessage = "Merged " + branchName + " into " + currentBranch + ".";
         commitWithMessage(mergeMessage, branchHeadCommitHash); // 传入hash2
-        message(mergeMessage);
+//        message(mergeMessage);
         if (conflictFlag == 1) {
             message("Encountered a merge conflict.");
         }

@@ -34,7 +34,6 @@ I definitions.inc
 > checkout master
 <<<
 > merge other
-Merged other into master.
 Encountered a merge conflict.
 <<<
 

@@ -59,7 +59,6 @@ I definitions.inc
 > checkout master
 <<<
 > merge other
-Merged other into master.
 <<<
 
 # --- Verify the results based on merge rules ---

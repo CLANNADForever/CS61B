@@ -31,7 +31,6 @@ I definitions.inc
 > checkout master
 <<<
 > merge other
-Merged other into master.
 <<<
 # Check for the automatic merge commit message.
 > log
